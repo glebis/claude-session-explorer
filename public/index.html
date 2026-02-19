@@ -209,27 +209,39 @@
     }
     .search-input {
       flex: 1;
-      padding: 10px 14px;
-      border: 1px solid rgba(0,0,0,0.15);
-      background: rgba(255,255,255,0.3);
-      font-size: 14px;
+      padding: 12px 16px;
+      border: 2px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.85);
+      font-size: 16px;
       font-family: var(--font-sans);
+      color: var(--c-ink);
       outline: none;
+      border-radius: 0;
+      transition: border-color 250ms var(--ease-out-quart), background-color 250ms, box-shadow 250ms, transform 150ms;
     }
-    .search-input:focus { border-color: var(--c-ink); background: rgba(255,255,255,0.5); }
+    .search-input::placeholder { color: rgba(0,0,0,0.35); }
+    .search-input:focus {
+      border-color: var(--c-ink);
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
     .search-btn {
-      padding: 10px 20px;
+      padding: 12px 22px;
       background: var(--c-ink);
-      color: var(--c-brand);
+      color: var(--c-white);
       border: none;
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       cursor: pointer;
       font-family: var(--font-sans);
+      transition: background 200ms, transform 150ms;
     }
-    .search-btn:hover { opacity: 0.9; }
-    .search-btn:disabled { opacity: 0.4; cursor: default; }
+    .search-btn:hover { background: #333; transform: translateY(-1px); }
+    .search-btn:active { transform: scale(0.97); }
+    .search-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 
     .filter-tags {
       display: flex;
@@ -725,6 +737,157 @@
       margin: var(--space-md) 0 var(--space-sm);
     }
 
+    /* Report list (accumulated insights) */
+    .report-list { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-sm); }
+    .report-list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xs); }
+    .report-list-header h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--c-meta); font-weight: 500; }
+    .report-clear-btn { font-size: 11px; color: var(--c-meta); background: none; border: none; cursor: pointer; font-family: var(--font-sans); }
+    .report-clear-btn:hover { color: var(--c-brand); }
+
+    .report-card {
+      border: 1px solid var(--border-on-white);
+      background: var(--c-white);
+      transition: box-shadow 0.15s ease;
+    }
+    .report-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .report-card-header {
+      display: flex; align-items: center; gap: var(--space-xs);
+      padding: 10px var(--space-sm);
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+    }
+    .report-card.expanded .report-card-header { border-bottom-color: var(--border-on-white); }
+    .report-card-toggle {
+      font-size: 10px; color: var(--c-meta);
+      transition: transform 0.15s ease;
+      flex-shrink: 0; width: 16px; text-align: center;
+    }
+    .report-card.expanded .report-card-toggle { transform: rotate(90deg); }
+    .report-card-title { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .report-card-time { font-size: 10px; color: var(--c-meta); flex-shrink: 0; }
+    .report-card-body {
+      display: none;
+      padding: var(--space-sm);
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .report-card.expanded .report-card-body { display: block; }
+    .report-card-actions {
+      display: flex; gap: 6px; padding: 6px var(--space-sm);
+      border-top: 1px solid var(--border-on-white);
+    }
+    .report-card .report-card-actions { display: none; }
+    .report-card.expanded .report-card-actions { display: flex; }
+    .report-action-btn {
+      font-size: 10px; color: var(--c-meta); background: none; border: 1px solid var(--border-on-white);
+      padding: 2px 8px; cursor: pointer; font-family: var(--font-sans);
+      transition: all 150ms;
+    }
+    .report-action-btn:hover { color: var(--c-ink); border-color: var(--c-ink); }
+
+    /* Flashcard review mode */
+    .flashcard-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .flashcard-overlay.visible { display: flex; }
+    .flashcard {
+      width: 540px; max-width: 92vw; max-height: 72vh;
+      background: var(--c-white); box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      display: flex; flex-direction: column;
+      animation: cardIn 250ms var(--ease-out-quart);
+      overflow: hidden; position: relative;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: scale(0.95) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .flashcard-header {
+      padding: 10px 16px; border-bottom: 1px solid var(--border-on-white);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; min-height: 0;
+    }
+    .flashcard-header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .flashcard-counter {
+      font-size: 10px; color: var(--c-white); background: var(--c-brand);
+      padding: 2px 7px; letter-spacing: 0.3px; white-space: nowrap; flex-shrink: 0;
+    }
+    .flashcard-title {
+      font-size: 13px; font-weight: 600; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; min-width: 0;
+    }
+    .flashcard-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: var(--c-meta); line-height: 1; padding: 2px 4px; flex-shrink: 0;
+      transition: color 150ms;
+    }
+    .flashcard-close:hover { color: var(--c-ink); }
+    /* Progress bar below header */
+    .flashcard-progress {
+      height: 2px; background: var(--border-on-white);
+    }
+    .flashcard-progress-fill {
+      height: 100%; background: var(--c-brand);
+      transition: width 300ms var(--ease-out-quart);
+    }
+    /* Slide container */
+    .flashcard-slide-wrap {
+      flex: 1; overflow: hidden; position: relative; min-height: 200px;
+    }
+    .flashcard-body {
+      position: absolute; inset: 0; overflow-y: auto; padding: 14px 16px;
+      font-size: 13px; line-height: 1.65;
+      transition: transform 250ms var(--ease-out-quart), opacity 200ms ease;
+    }
+    .flashcard-body.slide-out-left  { transform: translateX(-100%); opacity: 0; }
+    .flashcard-body.slide-out-right { transform: translateX(100%); opacity: 0; }
+    .flashcard-body.slide-in-left   { animation: slideInLeft 250ms var(--ease-out-quart) forwards; }
+    .flashcard-body.slide-in-right  { animation: slideInRight 250ms var(--ease-out-quart) forwards; }
+    @keyframes slideInLeft {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(-100%); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+    .flashcard-nav {
+      padding: 8px 16px; border-top: 1px solid var(--border-on-white);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .flashcard-nav-btn {
+      padding: 5px 14px; background: var(--c-ink); color: var(--c-white);
+      border: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+      cursor: pointer; font-family: var(--font-sans); transition: all 150ms;
+    }
+    .flashcard-nav-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .flashcard-nav-btn:active { transform: translateY(0); }
+    .flashcard-nav-btn:disabled { opacity: 0.25; cursor: default; transform: none; }
+    .flashcard-nav-center {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .flashcard-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border-on-white); transition: all 250ms;
+    }
+    .flashcard-dot.active { background: var(--c-brand); transform: scale(1.3); }
+
+    /* Report index in left panel */
+    .report-index { margin-top: var(--space-sm); border-top: 1px solid var(--border-on-brand); padding: var(--space-sm) var(--space-md) 0; }
+    .report-index-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.5; margin-bottom: 6px; }
+    .report-index-item {
+      display: block; width: 100%;
+      text-align: left; background: none; border: none;
+      font-family: var(--font-sans); font-size: 12px;
+      padding: 4px 0; cursor: pointer; color: var(--c-ink);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      opacity: 0.7;
+    }
+    .report-index-item:hover { opacity: 1; }
+
     /* Action cards */
     .action-cards {
       display: flex;
@@ -889,10 +1052,11 @@
     }
     .find-session-input {
       flex: 1;
-      padding: 8px 12px;
-      border: 1px solid var(--border-on-white);
-      font-size: 14px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border-on-white);
+      font-size: 15px;
       font-family: var(--font-sans);
+      transition: border-color 250ms var(--ease-out-quart), background-color 250ms, box-shadow 250ms, transform 150ms;
       outline: none;
       background: var(--c-bg-alt);
     }
@@ -1074,6 +1238,704 @@
       border-top: 1px solid var(--border-on-white);
     }
 
+    /* SVG Sparklines */
+    .stat-sparkline {
+      display: block;
+      margin-top: 4px;
+      opacity: 0.4;
+    }
+    .stat-sparkline polyline {
+      fill: none;
+      stroke: var(--c-ink);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Collapsible sections */
+    .collapsible-header {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .collapsible-header::before {
+      content: '\25B6'; /* right triangle */
+      font-size: 8px;
+      color: var(--c-meta);
+      transition: transform 200ms var(--ease-out-quart);
+      flex-shrink: 0;
+    }
+    .collapsible-header.expanded::before { transform: rotate(90deg); }
+    .collapsible-body {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 400ms var(--ease-out-quart), opacity 300ms, margin 200ms;
+      margin-top: 0;
+    }
+    .collapsible-body.expanded {
+      max-height: 2000px;
+      opacity: 1;
+      margin-top: var(--space-sm);
+    }
+
+    /* Calendar Module */
+    .calendar-section {
+      margin-bottom: var(--space-lg);
+    }
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-sm);
+    }
+    .calendar-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+    }
+    .calendar-modes {
+      display: flex;
+      gap: 2px;
+    }
+    .calendar-mode-btn {
+      padding: 3px 8px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--c-meta);
+      transition: background 150ms, color 150ms;
+    }
+    .calendar-mode-btn.active {
+      background: var(--c-ink);
+      color: var(--c-white);
+      border-color: var(--c-ink);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: 28px repeat(7, 1fr);
+      gap: 2px;
+    }
+    .calendar-weekday {
+      font-size: 8px;
+      color: var(--c-meta);
+      text-align: center;
+      padding-bottom: 2px;
+    }
+    .calendar-week-label {
+      font-size: 8px;
+      color: var(--c-meta);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 4px;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      min-height: 20px;
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 100ms var(--ease-out-quart), box-shadow 150ms;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .calendar-day:hover {
+      transform: scale(1.2);
+      z-index: 3;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .calendar-day:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--c-ink);
+      color: var(--c-white);
+      padding: 4px 8px;
+      font-size: 10px;
+      white-space: pre;
+      pointer-events: none;
+      z-index: 10;
+      border-radius: 2px;
+      line-height: 1.4;
+    }
+    .calendar-day.empty {
+      background: transparent;
+      cursor: default;
+    }
+    .calendar-day.empty:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .calendar-day.today {
+      outline: 2px solid var(--c-ink);
+      outline-offset: -1px;
+    }
+    .calendar-day .day-number {
+      font-size: 7px;
+      color: rgba(0,0,0,0.3);
+      position: absolute;
+      top: 1px;
+      right: 2px;
+      pointer-events: none;
+    }
+    .calendar-day .day-value {
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.55);
+      pointer-events: none;
+      line-height: 1;
+      transition: font-size 200ms;
+    }
+    .calendar-day.empty .day-value { display: none; }
+    .calendar-day.danger .day-number {
+      color: #C62828;
+      font-weight: 700;
+    }
+    .calendar-day.danger::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #C62828;
+      z-index: 1;
+    }
+    .calendar-day.late-night::before {
+      content: '';
+      position: absolute;
+      bottom: 1px;
+      right: 1px;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #7B1FA2;
+      z-index: 1;
+    }
+    .calendar-legend {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-top: var(--space-xs);
+      font-size: 9px;
+      color: var(--c-meta);
+      flex-wrap: wrap;
+    }
+    .calendar-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .calendar-legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+    .calendar-month-row {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 600;
+      padding: var(--space-xs) 0 2px;
+      color: var(--c-ink-light);
+    }
+    .calendar-month-row:first-child { padding-top: 0; }
+
+    /* Calendar filters row */
+    .calendar-filters {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--space-xs);
+    }
+    .calendar-filter-btn {
+      padding: 2px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px;
+      border: 1px solid var(--border-on-white); background: transparent;
+      cursor: pointer; font-family: var(--font-sans); color: var(--c-meta);
+      transition: all 150ms; display: flex; align-items: center; gap: 3px;
+    }
+    .calendar-filter-btn .filter-icon { font-size: 10px; }
+    .calendar-filter-btn.active { border-color: var(--c-ink); color: var(--c-ink); font-weight: 600; }
+    .calendar-filter-btn.active.health { border-color: #C62828; color: #C62828; }
+    .calendar-filter-btn.active.night  { border-color: #7B1FA2; color: #7B1FA2; }
+    .calendar-filter-btn.active.streak { border-color: #1565C0; color: #1565C0; }
+    .calendar-filter-btn.active.trend  { border-color: #2E7D32; color: #2E7D32; }
+
+    /* Filtered calendar cell overlays */
+    .calendar-day.filter-dim { opacity: 0.15; }
+    .calendar-day.filter-highlight { outline: 2px solid currentColor; outline-offset: -1px; z-index: 2; }
+    .calendar-day .day-trend {
+      position: absolute; bottom: 1px; left: 2px; font-size: 8px; font-weight: 700;
+      pointer-events: none; line-height: 1;
+    }
+    .day-trend.up { color: #C62828; }
+    .day-trend.down { color: #2E7D32; }
+    .day-trend.flat { color: var(--c-meta); }
+
+    /* Trends summary strip */
+    .calendar-trends {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-xs);
+      font-size: 10px; color: var(--c-ink-light);
+    }
+    .trend-chip {
+      padding: 3px 8px; background: var(--c-beige); border-radius: 2px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .trend-chip .trend-label { color: var(--c-meta); }
+    .trend-chip .trend-value { font-weight: 600; }
+    .trend-chip .trend-arrow { font-size: 11px; }
+    .trend-chip .trend-arrow.up   { color: #C62828; }
+    .trend-chip .trend-arrow.down { color: #2E7D32; }
+
+    /* Export button */
+    .calendar-export-btn {
+      padding: 2px 6px; font-size: 9px; border: 1px solid var(--border-on-white);
+      background: transparent; cursor: pointer; font-family: var(--font-sans);
+      color: var(--c-meta); transition: all 150ms; margin-left: 4px;
+    }
+    .calendar-export-btn:hover { border-color: var(--c-ink); color: var(--c-ink); }
+
+    /* Wellbeing strip */
+    .wellbeing-strip {
+      display: flex;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      flex-wrap: wrap;
+    }
+    .wellbeing-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .wellbeing-metric .wb-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.4;
+    }
+    .wellbeing-metric .wb-value {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .wellbeing-metric .wb-value.warn { color: #E65100; }
+    .wellbeing-metric .wb-value.danger { color: #C62828; }
+    .wellbeing-metric .wb-value.good { color: #2E7D32; }
+
+    /* Project swimlane timeline */
+    .swimlane-section {
+      margin-bottom: var(--space-lg);
+      border: 1px solid var(--border-on-white);
+      padding: var(--space-sm);
+    }
+    .swimlane-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+      margin-bottom: var(--space-xs);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .swimlane-toggle {
+      font-size: 10px;
+      color: var(--c-meta);
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    .swimlane-grid {
+      display: grid;
+      gap: 1px;
+      font-size: 10px;
+    }
+    .swimlane-row {
+      display: contents;
+    }
+    .swimlane-label {
+      font-size: 10px;
+      color: var(--c-ink-light);
+      padding: 2px 6px 2px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+    }
+    .swimlane-cell {
+      min-height: 16px;
+      background: var(--c-bg-alt);
+      cursor: pointer;
+      position: relative;
+      transition: opacity 150ms;
+    }
+    .swimlane-cell.active {
+      background: var(--c-brand);
+      opacity: 0.7;
+    }
+    .swimlane-cell:hover { opacity: 0.8; }
+    .swimlane-cell:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--c-ink);
+      color: var(--c-white);
+      padding: 2px 6px;
+      font-size: 9px;
+      white-space: nowrap;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .swimlane-dates {
+      display: contents;
+    }
+    .swimlane-date-label {
+      font-size: 8px;
+      color: var(--c-meta);
+      text-align: center;
+    }
+
+    /* Stat trend indicators */
+    .stat-trend {
+      font-size: 10px;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+    .stat-trend.up { color: #2E7D32; }
+    .stat-trend.down { color: #C62828; }
+    .stat-trend.flat { color: var(--c-meta); }
+
+    /* Heatmap */
+    .heatmap-section {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-white);
+    }
+    .heatmap-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+      margin-bottom: var(--space-xs);
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 32px repeat(24, 1fr);
+      gap: 1px;
+      font-size: 9px;
+    }
+    .heatmap-row-label {
+      font-size: 9px;
+      color: var(--c-meta);
+      display: flex;
+      align-items: center;
+      padding-right: 4px;
+    }
+    .heatmap-col-labels {
+      display: contents;
+    }
+    .heatmap-col-label {
+      text-align: center;
+      font-size: 8px;
+      color: var(--c-meta);
+      padding-bottom: 2px;
+    }
+    .heatmap-cell {
+      aspect-ratio: 1;
+      min-height: 12px;
+      background: var(--c-brand);
+      opacity: 0.05;
+      cursor: pointer;
+      position: relative;
+      transition: opacity 150ms, transform 100ms;
+    }
+    .heatmap-cell:hover {
+      transform: scale(1.3);
+      z-index: 2;
+    }
+    .heatmap-cell:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--c-ink);
+      color: var(--c-white);
+      padding: 2px 6px;
+      font-size: 9px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Error rate indicator */
+    .error-rate-section {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+    }
+    .error-rate-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.5;
+      margin-bottom: var(--space-xs);
+    }
+    .error-rate-value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .error-rate-value.low { color: #2E7D32; }
+    .error-rate-value.medium { color: #E65100; }
+    .error-rate-value.high { color: #C62828; }
+    .error-categories {
+      margin-top: 4px;
+    }
+
+    /* Session row badges */
+    .session-badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .badge {
+      font-size: 9px;
+      padding: 1px 4px;
+      border: 1px solid;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    .badge-error {
+      color: #C62828;
+      border-color: #C62828;
+      background: rgba(198, 40, 40, 0.08);
+    }
+    .badge-lang {
+      color: var(--c-ink-light);
+      border-color: var(--border-on-white);
+      background: var(--c-bg-alt);
+    }
+    .badge-task {
+      color: #1565C0;
+      border-color: #1565C0;
+      background: rgba(21, 101, 192, 0.08);
+    }
+    .badge-cost {
+      color: var(--c-meta);
+      border: none;
+      padding: 0;
+      font-family: var(--font-sans);
+    }
+    .badge-lines {
+      color: #2E7D32;
+      border: none;
+      padding: 0;
+    }
+    .badge-lines.negative { color: #C62828; }
+
+    /* Quick insights strip */
+    .insights-strip {
+      padding: var(--space-xs) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .insight-chip {
+      font-size: 10px;
+      padding: 3px 8px;
+      background: rgba(0,0,0,0.06);
+      border: none;
+      cursor: default;
+      font-family: var(--font-sans);
+      line-height: 1.4;
+      max-width: 100%;
+    }
+    .insight-chip button {
+      font-size: 9px;
+      padding: 1px 6px;
+      margin-left: 4px;
+      background: var(--c-ink);
+      color: var(--c-brand);
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: var(--font-sans);
+    }
+    .insight-chip button:hover { opacity: 0.8; }
+
+    /* Quick action buttons */
+    .quick-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: var(--space-sm);
+    }
+    .quick-action-btn {
+      padding: 5px 12px;
+      font-size: 11px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--c-ink-light);
+      transition: background 150ms, color 150ms;
+    }
+    .quick-action-btn:hover {
+      background: var(--c-ink);
+      color: var(--c-white);
+    }
+
+    /* ========================================
+       VOICE FAB & OVERLAY
+       ======================================== */
+
+    /* Voice FAB - compact minimalist design */
+    .voice-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--c-ink);
+      color: var(--c-white);
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      transition: all 200ms var(--ease-out-quart);
+    }
+    .voice-fab:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .voice-fab:active { transform: scale(0.95); }
+    .voice-fab svg { width: 18px; height: 18px; fill: currentColor; }
+
+    /* Idle state: no animation, quiet */
+    .voice-fab.idle { opacity: 0.7; }
+    .voice-fab.idle:hover { opacity: 1; }
+
+    /* Listening: brand color + ring pulse */
+    .voice-fab.listening {
+      background: var(--c-brand);
+      opacity: 1;
+      animation: voiceRing 1.2s ease-out infinite;
+    }
+    @keyframes voiceRing {
+      0% { box-shadow: 0 2px 12px rgba(0,0,0,0.15), 0 0 0 0 rgba(255,77,59,0.4); }
+      70% { box-shadow: 0 2px 12px rgba(0,0,0,0.15), 0 0 0 14px rgba(255,77,59,0); }
+      100% { box-shadow: 0 2px 12px rgba(0,0,0,0.15), 0 0 0 0 rgba(255,77,59,0); }
+    }
+
+    /* Processing: muted + spin */
+    .voice-fab.processing {
+      background: var(--c-ink-light);
+      opacity: 1;
+    }
+    .voice-fab.processing svg { animation: spin 0.8s linear infinite; }
+
+    /* Stopped (finished listening, waiting for re-click) */
+    .voice-fab.stopped {
+      background: var(--c-ink);
+      opacity: 0.9;
+    }
+
+    /* Compact voice tooltip (replaces large overlay) */
+    .voice-tooltip {
+      position: fixed;
+      bottom: 76px;
+      right: 24px;
+      background: var(--c-white);
+      border: 1px solid var(--border-on-white);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      z-index: 999;
+      display: none;
+      max-width: 240px;
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      transform-origin: bottom right;
+    }
+    .voice-tooltip.visible {
+      display: block;
+      animation: tooltipIn 200ms var(--ease-out-quart);
+    }
+    @keyframes tooltipIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .voice-tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      right: 16px;
+      width: 10px;
+      height: 10px;
+      background: var(--c-white);
+      border-right: 1px solid var(--border-on-white);
+      border-bottom: 1px solid var(--border-on-white);
+      transform: rotate(45deg);
+    }
+    .voice-tooltip-status {
+      color: var(--c-meta);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .voice-tooltip-text {
+      color: var(--c-ink);
+      word-break: break-word;
+    }
+    .voice-tooltip-text.dim { color: var(--c-meta); font-style: italic; }
+    .voice-tooltip-result {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-on-white);
+      color: #2E7D32;
+      font-size: 11px;
+    }
+    /* Mini waveform inside tooltip */
+    .voice-mini-wave {
+      display: inline-flex; align-items: center; gap: 2px; height: 14px; margin-right: 6px; vertical-align: middle;
+    }
+    .voice-mini-wave .bar {
+      width: 2px; background: var(--c-brand); border-radius: 1px; height: 3px;
+    }
+    .voice-mini-wave.active .bar { animation: miniWave 0.5s ease-in-out infinite alternate; }
+    .voice-mini-wave.active .bar:nth-child(1) { animation-delay: 0ms; }
+    .voice-mini-wave.active .bar:nth-child(2) { animation-delay: 70ms; }
+    .voice-mini-wave.active .bar:nth-child(3) { animation-delay: 140ms; }
+    .voice-mini-wave.active .bar:nth-child(4) { animation-delay: 210ms; }
+    .voice-mini-wave.active .bar:nth-child(5) { animation-delay: 280ms; }
+    @keyframes miniWave {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+    .voice-hint kbd {
+      background: var(--c-bg-alt);
+      border: 1px solid var(--border-on-white);
+      padding: 1px 4px;
+      font-size: 9px;
+      font-family: var(--font-sans);
+    }
+
     /* ========================================
        ANIMATIONS & MICRO-INTERACTIONS
        ======================================== */
@@ -1157,17 +2019,12 @@
     }
 
     /* --- Find input: focus glow --- */
-    .find-session-input {
-      transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
-    }
     .find-session-input:focus {
       box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+      transform: translateY(-1px);
     }
 
-    /* --- Search input (left panel): focus --- */
-    .search-input {
-      transition: border-color 200ms, background-color 200ms;
-    }
+    /* Search input focus animation merged into base .search-input above */
 
     /* --- Action cards: staggered entrance --- */
     .action-card {
@@ -1314,10 +2171,27 @@
               <div class="stat-label">Lines Removed</div>
               <div class="stat-value small" id="stat-lines-removed">--</div>
             </div>
+            <div class="stat-cell">
+              <div class="stat-label">Est. Cost</div>
+              <div class="stat-value small" id="stat-cost">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Error Rate</div>
+              <div class="stat-value small" id="stat-error-rate">--</div>
+            </div>
           </div>
+          <div class="insights-strip" id="insights-strip" style="display:none;"></div>
           <div class="tool-activity" id="tool-bars">
             <div class="tool-activity-header">Tool Distribution</div>
           </div>
+          <div class="tool-activity" id="language-bars" style="display:none;">
+            <div class="tool-activity-header">Languages</div>
+          </div>
+          <div class="error-rate-section" id="error-categories-section" style="display:none;">
+            <div class="error-rate-header">Top Error Categories</div>
+            <div id="error-categories"></div>
+          </div>
+          <div class="wellbeing-strip" id="wellbeing-strip" style="display:none;"></div>
         </div>
 
         <!-- Search left: input + filters -->
@@ -1345,7 +2219,7 @@
           </div>
         </div>
 
-        <!-- Insights left: nav + ask input -->
+        <!-- Insights left: nav + ask input + presets -->
         <div class="view" id="left-insights">
           <div class="insights-nav" id="insights-nav">
             <div class="insights-nav-item" data-action="load-report">
@@ -1359,6 +2233,40 @@
               <input class="search-input" id="insights-input" placeholder="e.g. Which sessions used the most tokens?" />
               <button class="search-btn" id="insights-ask-btn">Ask</button>
             </div>
+            <div style="margin-top: var(--space-xs);">
+              <button class="filter-tag" id="suggestions-toggle" style="font-size:10px; cursor:pointer;">Suggestions</button>
+            </div>
+            <div id="insight-presets" style="margin-top: var(--space-xs);">
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.4; margin: var(--space-xs) 0 4px;">Productivity</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+                <button class="filter-tag insight-preset" data-q="What are my most productive hours and days?">Peak hours</button>
+                <button class="filter-tag insight-preset" data-q="Compare my productivity this week vs last week. Tokens, sessions, lines changed.">Week comparison</button>
+                <button class="filter-tag insight-preset" data-q="Which projects take the most tokens per session? Am I over-spending on any?">Token efficiency</button>
+              </div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.4; margin: var(--space-xs) 0 4px;">Errors & Quality</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+                <button class="filter-tag insight-preset" data-q="What are the most common error categories? Which projects have the highest error rates?">Error patterns</button>
+                <button class="filter-tag insight-preset" data-q="Find sessions where I retried the same operation multiple times. What went wrong?">Retry patterns</button>
+                <button class="filter-tag insight-preset" data-q="Which tools fail most often? Should I change my approach?">Tool reliability</button>
+              </div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.4; margin: var(--space-xs) 0 4px;">Workflow & Strategy</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+                <button class="filter-tag insight-preset" data-q="Analyze my tool usage patterns. Am I using the right tools for each task?">Tool usage audit</button>
+                <button class="filter-tag insight-preset" data-q="Which sessions were most cost-effective? What patterns made them efficient?">Cost optimization</button>
+                <button class="filter-tag insight-preset" data-q="What frameworks, libraries and technologies am I using most? How has this changed over time?">Tech stack trends</button>
+                <button class="filter-tag insight-preset" data-q="Identify sessions that could have been shorter. What patterns lead to long sessions?">Session optimization</button>
+              </div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.4; margin: var(--space-xs) 0 4px;">Research & Discovery</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                <button class="filter-tag insight-preset" data-q="Find sessions involving research, web search, or documentation lookups. What was I exploring?">Research sessions</button>
+                <button class="filter-tag insight-preset" data-q="What topics or technologies have I been learning about recently?">Learning patterns</button>
+                <button class="filter-tag insight-preset" data-q="Which projects haven't been touched recently? Should I revisit any?">Stale projects</button>
+              </div>
+            </div>
+          </div>
+          <div class="report-index" id="report-index" style="display:none;">
+            <div class="report-index-title">Recent Reports</div>
+            <div id="report-index-list"></div>
           </div>
         </div>
       </div>
@@ -1392,6 +2300,52 @@
             </div>
             <div class="chart-bars" id="daily-chart"></div>
             <div class="chart-dates" id="chart-dates"></div>
+          </div>
+          <div class="quick-actions" id="quick-actions">
+            <button class="quick-action-btn" data-insight-query="Suggest improvements for my coding workflow based on recent sessions">Suggest improvements</button>
+            <button class="quick-action-btn" data-insight-query="Show error patterns across my recent sessions and how to fix them">Show error patterns</button>
+            <button class="quick-action-btn" data-insight-query="Analyze my productivity trends this week vs last week">Analyze productivity</button>
+          </div>
+          <div class="heatmap-section" id="heatmap-section" style="display:none;">
+            <div class="heatmap-title collapsible-header expanded" data-target="heatmap-body">Activity Heatmap (Hour x Day)</div>
+            <div class="collapsible-body expanded" id="heatmap-body">
+              <div class="heatmap-grid" id="heatmap-grid"></div>
+            </div>
+          </div>
+          <div class="calendar-section" id="calendar-section" style="display:none;">
+            <div class="calendar-header">
+              <span class="calendar-title collapsible-header" data-target="calendar-body">Activity Calendar (90 days)</span>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div class="calendar-modes" id="calendar-modes">
+                  <button class="calendar-mode-btn active" data-mode="sessions">Sessions</button>
+                  <button class="calendar-mode-btn" data-mode="duration">Duration</button>
+                  <button class="calendar-mode-btn" data-mode="focus">Focus</button>
+                  <button class="calendar-mode-btn" data-mode="cost">Cost</button>
+                  <button class="calendar-mode-btn" data-mode="lines">Lines</button>
+                </div>
+                <button class="calendar-export-btn" id="calendar-export-csv" title="Export as CSV">CSV</button>
+                <button class="calendar-export-btn" id="calendar-export-md" title="Export as Markdown">MD</button>
+              </div>
+            </div>
+            <div class="collapsible-body" id="calendar-body">
+              <div class="calendar-filters" id="calendar-filters">
+                <button class="calendar-filter-btn health" data-filter="health"><span class="filter-icon">!</span> Health</button>
+                <button class="calendar-filter-btn night" data-filter="night"><span class="filter-icon">*</span> Night Owl</button>
+                <button class="calendar-filter-btn streak" data-filter="streak"><span class="filter-icon">#</span> Streaks</button>
+                <button class="calendar-filter-btn trend" data-filter="trend"><span class="filter-icon">~</span> Trends</button>
+              </div>
+              <div class="calendar-grid" id="calendar-grid"></div>
+              <div class="calendar-legend" id="calendar-legend"></div>
+              <div class="calendar-trends" id="calendar-trends"></div>
+            </div>
+          </div>
+          <div class="swimlane-section" id="swimlane-section" style="display:none;">
+            <div class="swimlane-title collapsible-header" data-target="swimlane-body" id="swimlane-toggle">
+              <span>Project Activity (30 days)</span>
+            </div>
+            <div class="collapsible-body" id="swimlane-body">
+              <div class="swimlane-grid" id="swimlane-grid"></div>
+            </div>
           </div>
           <div class="date-filter-bar" id="date-filter-bar">
             <span class="date-filter-label" id="date-filter-label"></span>
@@ -1431,7 +2385,7 @@
         </div>
       </div>
 
-      <!-- Insights right: actions + report -->
+      <!-- Insights right: actions + report list -->
       <div class="view" id="right-insights">
         <div class="content-header">
           <span class="meta-label">Insights</span>
@@ -1439,13 +2393,62 @@
         </div>
         <div class="content-body">
           <button class="generate-actions-btn" id="generate-actions-btn">Generate Actions</button>
-          <div class="loading" id="insights-loading">Analyzing sessions</div>
+          <div class="loading" id="insights-loading"><span id="insights-loading-text">Analyzing sessions</span></div>
           <div class="action-cards" id="action-cards"></div>
-          <div class="agent-response" id="insights-response"></div>
           <div class="insights-content" id="insights-content"></div>
+          <div id="report-list-container">
+            <div class="report-list-header" id="report-list-header" style="display:none;">
+              <h3>Generated Reports</h3>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button class="report-action-btn" id="report-review-btn" title="Review as flashcards">Review</button>
+                <button class="report-clear-btn" id="report-clear-btn">Clear all</button>
+              </div>
+            </div>
+            <div class="report-list" id="report-list"></div>
+          </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Flashcard review overlay -->
+  <div class="flashcard-overlay" id="flashcard-overlay" role="dialog" aria-label="Report review cards">
+    <div class="flashcard">
+      <div class="flashcard-header">
+        <div class="flashcard-header-left">
+          <span class="flashcard-counter" id="flashcard-counter">1/1</span>
+          <span class="flashcard-title" id="flashcard-title"></span>
+        </div>
+        <button class="flashcard-close" id="flashcard-close">&times;</button>
+      </div>
+      <div class="flashcard-progress"><div class="flashcard-progress-fill" id="flashcard-progress"></div></div>
+      <div class="flashcard-slide-wrap">
+        <div class="flashcard-body agent-response visible" id="flashcard-body"></div>
+      </div>
+      <div class="flashcard-nav">
+        <button class="flashcard-nav-btn" id="flashcard-prev">&larr; Prev</button>
+        <div class="flashcard-nav-center" id="flashcard-dots"></div>
+        <button class="flashcard-nav-btn" id="flashcard-next">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice FAB -->
+  <button id="voice-btn" class="voice-fab idle" title="Click to speak a command">
+    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+  </button>
+
+  <!-- Compact voice tooltip -->
+  <div id="voice-tooltip" class="voice-tooltip">
+    <div class="voice-tooltip-status" id="voice-tooltip-status">Ready</div>
+    <div>
+      <span class="voice-mini-wave" id="voice-mini-wave">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        <span class="bar"></span><span class="bar"></span>
+      </span>
+      <span class="voice-tooltip-text dim" id="voice-tooltip-text">Speak a command...</span>
+    </div>
+    <div class="voice-tooltip-result" id="voice-tooltip-result" style="display:none;"></div>
   </div>
 
   <script>
@@ -1463,7 +2466,7 @@
       expandedGroups: new Set(),
       granularity: 'week', // 'day' | 'week' | 'month'
       findQuery: '',
-      activeFilter: null, // smart filter key
+      activeFilters: new Set(), // multi-select smart filter keys
       smartFilters: [], // [{label, key, count}]
       insightsCache: JSON.parse(localStorage.getItem('insightsCache') || '{}'), // sessionId -> { text, cost, turns }
     };
@@ -1479,14 +2482,69 @@
       try { localStorage.setItem('insightsCache', JSON.stringify(state.insightsCache)); } catch {}
     }
 
-    function switchView(view) {
+    function switchView(view, updateHash = true) {
       state.currentView = view;
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
       ['overview', 'search', 'session', 'insights'].forEach(v => {
         document.getElementById(`left-${v}`).classList.toggle('active', v === view);
         document.getElementById(`right-${v}`).classList.toggle('active', v === view);
       });
+      // Update URL hash for reloadable state
+      if (updateHash) {
+        const hash = buildHash();
+        history.replaceState(null, '', hash);
+      }
     }
+
+    // --- URL Hash Routing ---
+    function buildHash() {
+      const parts = [`view=${state.currentView}`];
+      if (state.currentSessionId && state.currentView === 'session') {
+        parts.push(`session=${state.currentSessionId}`);
+      }
+      if (state.activeFilters.size > 0) {
+        parts.push(`filters=${[...state.activeFilters].map(encodeURIComponent).join(',')}`);
+      }
+      if (state.findQuery) {
+        parts.push(`q=${encodeURIComponent(state.findQuery)}`);
+      }
+      if (state.dateFilter) {
+        parts.push(`date=${state.dateFilter}`);
+      }
+      return '#' + parts.join('&');
+    }
+
+    function restoreFromHash() {
+      const hash = location.hash.slice(1);
+      if (!hash) return;
+      const params = {};
+      for (const part of hash.split('&')) {
+        const [k, v] = part.split('=');
+        if (k && v) params[k] = decodeURIComponent(v);
+      }
+
+      if (params.view) {
+        switchView(params.view, false);
+      }
+      if (params.filters) {
+        for (const f of params.filters.split(',')) {
+          state.activeFilters.add(decodeURIComponent(f));
+        }
+      }
+      if (params.q) {
+        state.findQuery = params.q;
+        document.getElementById('find-input').value = params.q;
+      }
+      if (params.date) {
+        setDateFilter(params.date);
+      }
+      if (params.session) {
+        // Defer session open until sessions are loaded
+        state._pendingSessionId = params.session;
+      }
+    }
+
+    window.addEventListener('hashchange', () => restoreFromHash());
 
     // --- Format helpers ---
     function formatTokens(n) {
@@ -1514,10 +2572,27 @@
       return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // --- Hardened fetch: checks res.ok, supports timeout via AbortController ---
+    async function safeFetch(url, opts = {}) {
+      const { timeout = 30000, ...fetchOpts } = opts;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      try {
+        const res = await fetch(url, { ...fetchOpts, signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return res;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // Reduced-motion check
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     // --- Load Stats ---
     async function loadStats() {
       try {
-        const res = await fetch('/api/stats');
+        const res = await safeFetch('/api/stats');
         const data = await res.json();
         state.stats = data;
 
@@ -1529,13 +2604,45 @@
         document.getElementById('stat-lines-removed').textContent = '-' + formatTokens(data.total_lines.removed);
         document.getElementById('session-count').textContent = data.total_sessions + ' sessions';
 
+        // Cost stat
+        document.getElementById('stat-cost').textContent = '$' + (data.estimated_cost || 0).toFixed(0);
+
+        // Error rate stat with color
+        const errEl = document.getElementById('stat-error-rate');
+        const errRate = data.error_rate || 0;
+        errEl.textContent = errRate + '%';
+        errEl.className = 'stat-value small' + (errRate > 40 ? ' error-rate-value high' : errRate > 20 ? ' error-rate-value medium' : ' error-rate-value low');
+
         // Tool bars
         renderToolBars(data.top_tools);
+
+        // Language bars
+        if (data.top_languages && data.top_languages.length > 0) {
+          renderLanguageBars(data.top_languages);
+        }
+
+        // Error categories
+        if (data.top_error_categories && data.top_error_categories.length > 0) {
+          renderErrorCategories(data.top_error_categories);
+        }
+
+        // Heatmap
+        if (data.hourly_activity && data.dow_activity) {
+          renderHeatmap(data.hourly_activity, data.dow_activity);
+        }
+
+        // Week-over-week trends
+        if (data.daily_activity) {
+          computeAndRenderTrends(data.daily_activity);
+        }
+
         // Activity chart (responds to granularity)
         state.dailyData = data.daily_activity;
         renderChart();
       } catch (e) {
         console.error('Failed to load stats:', e);
+        document.getElementById('stat-sessions').textContent = '--';
+        document.getElementById('session-count').textContent = e.name === 'AbortError' ? 'Server timeout' : 'Connection error';
       }
     }
 
@@ -1552,6 +2659,792 @@
         </div>`;
       }
       container.innerHTML = html;
+    }
+
+    function renderLanguageBars(languages) {
+      const container = document.getElementById('language-bars');
+      container.style.display = '';
+      const max = languages.length > 0 ? languages[0][1] : 1;
+      let html = '<div class="tool-activity-header">Languages</div>';
+      for (const [name, count] of languages.slice(0, 5)) {
+        const pct = (count / max * 100).toFixed(1);
+        html += `<div class="tool-bar-row">
+          <span class="tool-bar-label" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+          <span class="tool-bar-track"><span class="tool-bar-fill" style="width:${pct}%"></span></span>
+          <span class="tool-bar-count">${formatTokens(count)}</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function renderErrorCategories(categories) {
+      const section = document.getElementById('error-categories-section');
+      section.style.display = '';
+      const container = document.getElementById('error-categories');
+      const max = categories.length > 0 ? categories[0][1] : 1;
+      let html = '';
+      for (const [name, count] of categories) {
+        const pct = (count / max * 100).toFixed(1);
+        html += `<div class="tool-bar-row">
+          <span class="tool-bar-label" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+          <span class="tool-bar-track"><span class="tool-bar-fill" style="width:${pct}%;background:#C62828;opacity:0.4"></span></span>
+          <span class="tool-bar-count">${count}</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function renderHeatmap(hourlyActivity, dowActivity) {
+      // Build a combined dow x hour grid from allSessions when available
+      // For now, show hour distribution with dow as separate dimension
+      const section = document.getElementById('heatmap-section');
+      section.style.display = '';
+      const grid = document.getElementById('heatmap-grid');
+
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      // We need per-dow-per-hour data. We'll compute from allSessions later.
+      // For now, approximate: distribute hourly counts proportionally by dow
+      const totalDow = Object.values(dowActivity).reduce((s, v) => s + v, 0) || 1;
+      const totalHour = Object.values(hourlyActivity).reduce((s, v) => s + v, 0) || 1;
+
+      let maxCell = 0;
+      const cells = {};
+      for (let d = 0; d < 7; d++) {
+        const dowFrac = (dowActivity[d] || 0) / totalDow;
+        for (let h = 0; h < 24; h++) {
+          const hourCount = hourlyActivity[h] || 0;
+          const val = Math.round(hourCount * dowFrac);
+          cells[`${d}-${h}`] = val;
+          if (val > maxCell) maxCell = val;
+        }
+      }
+
+      let html = '<span class="heatmap-row-label"></span>';
+      // Hour labels
+      for (let h = 0; h < 24; h++) {
+        html += `<span class="heatmap-col-label">${h % 3 === 0 ? h : ''}</span>`;
+      }
+
+      // Rows (Mon first)
+      const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+      for (const d of dayOrder) {
+        html += `<span class="heatmap-row-label">${dayNames[d]}</span>`;
+        for (let h = 0; h < 24; h++) {
+          const val = cells[`${d}-${h}`] || 0;
+          const opacity = maxCell > 0 ? Math.max(0.05, val / maxCell) : 0.05;
+          html += `<span class="heatmap-cell" style="opacity:${opacity.toFixed(2)}" data-tooltip="${dayNames[d]} ${h}:00 - ${val} msgs"></span>`;
+        }
+      }
+
+      grid.innerHTML = html;
+    }
+
+    function computeAndRenderTrends(dailyActivity) {
+      // Compare this week vs last week
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const dow = now.getDay();
+      const mondayOffset = dow === 0 ? -6 : 1 - dow;
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() + mondayOffset);
+      const lastMonday = new Date(thisMonday);
+      lastMonday.setDate(thisMonday.getDate() - 7);
+
+      function weekTotal(startDate, data) {
+        let total = 0;
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(startDate);
+          d.setDate(startDate.getDate() + i);
+          const key = d.toISOString().slice(0, 10);
+          const entry = data.find(([k]) => k === key);
+          if (entry) total += entry[1];
+        }
+        return total;
+      }
+
+      const thisWeekSessions = weekTotal(thisMonday, dailyActivity);
+      const lastWeekSessions = weekTotal(lastMonday, dailyActivity);
+
+      const sessionEl = document.getElementById('stat-sessions');
+      if (lastWeekSessions > 0) {
+        const pctChange = Math.round(((thisWeekSessions - lastWeekSessions) / lastWeekSessions) * 100);
+        const arrow = pctChange > 0 ? '↑' : pctChange < 0 ? '↓' : '-';
+        const cls = pctChange > 0 ? 'up' : pctChange < 0 ? 'down' : 'flat';
+        const trendEl = document.createElement('div');
+        trendEl.className = `stat-trend ${cls}`;
+        trendEl.textContent = `${arrow} ${Math.abs(pctChange)}% vs last wk`;
+        sessionEl.parentElement.appendChild(trendEl);
+      }
+    }
+
+    function computeQuickInsights(stats, sessions) {
+      const strip = document.getElementById('insights-strip');
+      const chips = [];
+
+      // Error rate insight
+      if (stats.error_rate > 30) {
+        const topErr = stats.top_error_categories?.[0];
+        const errLabel = topErr ? topErr[0] : 'unknown';
+        chips.push(`${stats.error_rate}% of sessions had errors. Most common: ${errLabel}`);
+      }
+
+      // Peak hours insight
+      if (stats.hourly_activity) {
+        const hours = Object.entries(stats.hourly_activity).sort((a, b) => b[1] - a[1]);
+        if (hours.length > 0) {
+          const peak = hours.slice(0, 3).map(([h]) => h + ':00').join(', ');
+          chips.push(`Peak hours: ${peak}`);
+        }
+      }
+
+      // Week-over-week trend
+      if (stats.daily_activity) {
+        const now = new Date();
+        const dow = now.getDay();
+        const mondayOffset = dow === 0 ? -6 : 1 - dow;
+        const thisMonday = new Date(now);
+        thisMonday.setDate(now.getDate() + mondayOffset);
+        const lastMonday = new Date(thisMonday);
+        lastMonday.setDate(thisMonday.getDate() - 7);
+
+        let thisWeek = 0, lastWeek = 0;
+        for (const [date, count] of stats.daily_activity) {
+          const d = new Date(date + 'T12:00:00');
+          if (d >= thisMonday) thisWeek += count;
+          else if (d >= lastMonday && d < thisMonday) lastWeek += count;
+        }
+        if (lastWeek > 0) {
+          const pct = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+          if (pct !== 0) {
+            chips.push(`This week: ${pct > 0 ? pct + '% more' : Math.abs(pct) + '% fewer'} sessions than last week`);
+          }
+        }
+      }
+
+      // Stale projects
+      if (sessions.length > 0) {
+        const projectLastSeen = {};
+        for (const s of sessions) {
+          const proj = shortProject(s.project);
+          if (proj && !projectLastSeen[proj]) {
+            projectLastSeen[proj] = s.start_time;
+          }
+        }
+        const now = Date.now();
+        for (const [proj, lastTime] of Object.entries(projectLastSeen)) {
+          const daysSince = Math.floor((now - new Date(lastTime).getTime()) / 86400000);
+          if (daysSince >= 14) {
+            chips.push(`Haven't touched ${proj} in ${daysSince} days`);
+            break; // just one stale project
+          }
+        }
+      }
+
+      if (chips.length > 0) {
+        strip.style.display = '';
+        strip.innerHTML = chips.map(c =>
+          `<span class="insight-chip">${escapeHtml(c)}</span>`
+        ).join('');
+      }
+    }
+
+    // --- SVG Sparklines ---
+    function renderSparkline(containerId, dailyData, days = 14) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      // Get last N days of data
+      const now = new Date();
+      const values = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const entry = dailyData.find(([k]) => k === key);
+        values.push(entry ? entry[1] : 0);
+      }
+
+      const max = Math.max(...values, 1);
+      const w = 80, h = 20;
+      const points = values.map((v, i) => {
+        const x = (i / (values.length - 1)) * w;
+        const y = h - (v / max) * h;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      const existingSpark = container.querySelector('.stat-sparkline');
+      if (existingSpark) existingSpark.remove();
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'stat-sparkline');
+      svg.setAttribute('width', w);
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.innerHTML = `<polyline points="${points}"/>`;
+      container.appendChild(svg);
+    }
+
+    function renderSparklines() {
+      if (!state.stats?.daily_activity) return;
+      // Session count sparkline
+      renderSparkline('stat-sessions', state.stats.daily_activity);
+
+      // Token sparkline from allSessions
+      if (state.allSessions.length > 0) {
+        const tokenDaily = {};
+        const linesDaily = {};
+        for (const s of state.allSessions) {
+          const day = s.start_time?.slice(0, 10);
+          if (!day) continue;
+          tokenDaily[day] = (tokenDaily[day] || 0) + (s.input_tokens || 0) + (s.output_tokens || 0);
+          linesDaily[day] = (linesDaily[day] || 0) + (s.lines_added || 0);
+        }
+        const tokenEntries = Object.entries(tokenDaily).sort((a, b) => a[0].localeCompare(b[0]));
+        const linesEntries = Object.entries(linesDaily).sort((a, b) => a[0].localeCompare(b[0]));
+        renderSparkline('stat-tokens', tokenEntries);
+        renderSparkline('stat-lines-added', linesEntries);
+      }
+    }
+
+    // --- Project Swimlane Timeline ---
+    function renderSwimlane() {
+      if (!state.allSessions || state.allSessions.length === 0) return;
+
+      const section = document.getElementById('swimlane-section');
+      const grid = document.getElementById('swimlane-grid');
+
+      // Get last 30 days
+      const now = new Date();
+      const days = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
+      }
+
+      // Top 5 projects by session count
+      const projectCounts = {};
+      for (const s of state.allSessions) {
+        const proj = shortProject(s.project);
+        if (proj) projectCounts[proj] = (projectCounts[proj] || 0) + 1;
+      }
+      const topProjects = Object.entries(projectCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([p]) => p);
+
+      if (topProjects.length === 0) return;
+
+      // Build activity map
+      const activityMap = {};
+      for (const s of state.allSessions) {
+        const proj = shortProject(s.project);
+        const day = s.start_time?.slice(0, 10);
+        if (proj && day) {
+          const key = `${proj}|${day}`;
+          activityMap[key] = (activityMap[key] || 0) + 1;
+        }
+      }
+
+      section.style.display = '';
+      const cols = days.length + 1; // +1 for label column
+      grid.style.gridTemplateColumns = `100px repeat(${days.length}, 1fr)`;
+
+      let html = '';
+      // Date header row
+      html += '<span class="swimlane-label"></span>';
+      for (let i = 0; i < days.length; i++) {
+        const label = i % 7 === 0 ? days[i].slice(5) : '';
+        html += `<span class="swimlane-date-label">${label}</span>`;
+      }
+
+      for (const proj of topProjects) {
+        const shortName = proj.split('/').pop();
+        html += `<span class="swimlane-label" title="${escapeHtml(proj)}">${escapeHtml(shortName)}</span>`;
+        for (const day of days) {
+          const count = activityMap[`${proj}|${day}`] || 0;
+          const cls = count > 0 ? 'swimlane-cell active' : 'swimlane-cell';
+          const opacity = count > 0 ? Math.min(0.3 + count * 0.2, 1) : 1;
+          html += `<span class="${cls}" style="${count > 0 ? `opacity:${opacity}` : ''}" data-tooltip="${escapeHtml(proj)} ${day}: ${count} sessions"></span>`;
+        }
+      }
+
+      grid.innerHTML = html;
+    }
+
+    // Generic collapsible section toggle
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const targetId = header.dataset.target;
+        if (!targetId) return;
+        const body = document.getElementById(targetId);
+        if (!body) return;
+        header.classList.toggle('expanded');
+        body.classList.toggle('expanded');
+      });
+    });
+
+    // --- Calendar Module ---
+    let calendarMode = 'sessions'; // 'sessions' | 'duration' | 'focus' | 'cost' | 'lines'
+
+    function renderCalendar() {
+      const calDays = state.stats?.calendar_days;
+      if (!calDays || calDays.length === 0) return;
+
+      const section = document.getElementById('calendar-section');
+      if (!section) return;
+      section.style.display = '';
+
+      const grid = document.getElementById('calendar-grid');
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      // Color scales per mode
+      const colorScales = {
+        sessions: { color: [255, 77, 59], label: 'Sessions' },      // brand red
+        duration: { color: [21, 101, 192], label: 'Duration (min)' }, // blue
+        focus:    { color: [46, 125, 50], label: 'Focus (1=single project)' }, // green
+        cost:     { color: [230, 81, 0], label: 'Est. Cost ($)' },    // orange
+        lines:    { color: [123, 31, 162], label: 'Lines Added' },    // purple
+      };
+
+      function getValue(d) {
+        switch (calendarMode) {
+          case 'sessions': return d.sessions;
+          case 'duration': return d.duration;
+          case 'focus': return d.projects > 0 ? (1 / d.projects) : 0; // inverse: 1 project = max focus
+          case 'cost': return d.cost;
+          case 'lines': return d.linesAdded;
+          default: return d.sessions;
+        }
+      }
+
+      const values = calDays.map(getValue);
+      const maxVal = Math.max(...values, 1);
+      const scale = colorScales[calendarMode];
+
+      // Group by week rows with month labels
+      let html = '';
+      // Weekday headers
+      html += '<span class="calendar-week-label"></span>';
+      const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      for (const dl of dayLabels) {
+        html += `<span class="calendar-weekday">${dl}</span>`;
+      }
+
+      let currentMonth = '';
+      let weekBuffer = [];
+
+      for (let i = 0; i < calDays.length; i++) {
+        const d = calDays[i];
+        const date = new Date(d.date + 'T12:00:00');
+        const dow = date.getDay(); // 0=Sun
+        const mondayIdx = dow === 0 ? 6 : dow - 1; // 0=Mon
+
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const monthKey = d.date.slice(0, 7);
+
+        // New month label
+        if (monthKey !== currentMonth) {
+          // Flush current week buffer first
+          if (weekBuffer.length > 0) {
+            html += flushWeek(weekBuffer);
+            weekBuffer = [];
+          }
+          currentMonth = monthKey;
+          html += `<div class="calendar-month-row">${date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>`;
+          // Add empty cells for offset to correct weekday
+          const weekLabel = d.date.slice(8, 10);
+          html += `<span class="calendar-week-label">${weekLabel}</span>`;
+          for (let j = 0; j < mondayIdx; j++) {
+            html += '<span class="calendar-day empty"></span>';
+          }
+          weekBuffer = new Array(mondayIdx).fill(null);
+        }
+
+        // Start new week row if needed
+        if (mondayIdx === 0 && weekBuffer.length > 0) {
+          html += flushWeek(weekBuffer);
+          weekBuffer = [];
+          const weekLabel = d.date.slice(8, 10);
+          html += `<span class="calendar-week-label">${weekLabel}</span>`;
+        }
+
+        const val = getValue(d);
+        const intensity = maxVal > 0 ? val / maxVal : 0;
+        const alpha = d.sessions > 0 ? Math.max(0.1, intensity) : 0.03;
+        const bg = `rgba(${scale.color.join(',')},${alpha.toFixed(2)})`;
+
+        const isToday = d.date === todayStr;
+        const classes = ['calendar-day'];
+        if (isToday) classes.push('today');
+        if (d.danger) classes.push('danger');
+        if (d.lateNight) classes.push('late-night');
+        if (d.sessions === 0) classes.push('empty');
+
+        const dayNum = date.getDate();
+        const tooltipParts = [d.date];
+        if (d.sessions > 0) {
+          tooltipParts.push(`${d.sessions} sessions, ${d.duration}min`);
+          tooltipParts.push(`${d.projects} project${d.projects !== 1 ? 's' : ''}, $${d.cost.toFixed(2)}`);
+          if (d.linesAdded > 0) tooltipParts.push(`+${d.linesAdded} lines`);
+          if (d.danger) tooltipParts.push('-- HEAVY DAY');
+          if (d.lateNight) tooltipParts.push('Late night work');
+        } else {
+          tooltipParts.push('No activity');
+        }
+
+        // Format display value for the cell
+        let displayVal = '';
+        if (d.sessions > 0 && val > 0) {
+          if (calendarMode === 'cost') displayVal = '$' + (val < 1 ? val.toFixed(2) : val.toFixed(0));
+          else if (calendarMode === 'focus') displayVal = val.toFixed(1);
+          else if (calendarMode === 'duration') displayVal = val >= 60 ? (val / 60).toFixed(1) + 'h' : val + 'm';
+          else if (calendarMode === 'lines') displayVal = val >= 1000 ? (val / 1000).toFixed(1) + 'k' : String(val);
+          else displayVal = String(val);
+        }
+        // Proportional font-size: 8px at low, 12px at max
+        const valFontSize = d.sessions > 0 ? (8 + 4 * intensity).toFixed(1) : 8;
+        html += `<span class="${classes.join(' ')}" style="background:${bg}" data-date="${d.date}" data-tooltip="${tooltipParts.join('\n')}"><span class="day-number">${dayNum}</span>${displayVal ? `<span class="day-value" style="font-size:${valFontSize}px">${displayVal}</span>` : ''}</span>`;
+        weekBuffer.push(d);
+      }
+
+      // Flush remaining
+      if (weekBuffer.length > 0) {
+        html += flushWeek(weekBuffer);
+      }
+
+      function flushWeek(buf) {
+        // Pad to 7 days
+        let pad = '';
+        for (let j = buf.length; j < 7; j++) {
+          pad += '<span class="calendar-day empty"></span>';
+        }
+        return pad;
+      }
+
+      grid.innerHTML = html;
+
+      // Legend
+      const legend = document.getElementById('calendar-legend');
+      if (legend) {
+        legend.innerHTML = `
+          <span class="calendar-legend-item"><span class="calendar-legend-swatch" style="background:rgba(${scale.color.join(',')},0.1)"></span>Low</span>
+          <span class="calendar-legend-item"><span class="calendar-legend-swatch" style="background:rgba(${scale.color.join(',')},0.5)"></span>Medium</span>
+          <span class="calendar-legend-item"><span class="calendar-legend-swatch" style="background:rgba(${scale.color.join(',')},1)"></span>High</span>
+          <span class="calendar-legend-item"><span class="calendar-legend-swatch" style="background:#C62828;border-radius:50%;width:6px;height:6px"></span>Heavy day</span>
+          <span class="calendar-legend-item"><span class="calendar-legend-swatch" style="background:#7B1FA2;border-radius:50%;width:5px;height:5px"></span>Late night</span>
+        `;
+      }
+
+      // Render trend summary
+      renderCalendarTrends(calDays);
+      // Re-apply active filter if any
+      if (calendarFilter) applyCalendarFilter();
+    }
+
+    // Calendar mode switcher
+    document.getElementById('calendar-modes')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.calendar-mode-btn');
+      if (!btn) return;
+      calendarMode = btn.dataset.mode;
+      document.querySelectorAll('.calendar-mode-btn').forEach(b =>
+        b.classList.toggle('active', b === btn)
+      );
+      renderCalendar();
+    });
+
+    // Calendar click: filter to that date
+    document.getElementById('calendar-grid')?.addEventListener('click', (e) => {
+      const cell = e.target.closest('.calendar-day');
+      if (!cell || cell.classList.contains('empty')) return;
+      const date = cell.dataset.date;
+      if (date) setDateFilter(date);
+    });
+
+    // --- Calendar Filters ---
+    let calendarFilter = null; // null | 'health' | 'night' | 'streak' | 'trend'
+
+    document.getElementById('calendar-filters')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.calendar-filter-btn');
+      if (!btn) return;
+      const filter = btn.dataset.filter;
+      if (calendarFilter === filter) {
+        calendarFilter = null;
+        btn.classList.remove('active');
+      } else {
+        calendarFilter = filter;
+        document.querySelectorAll('.calendar-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+      applyCalendarFilter();
+    });
+
+    function applyCalendarFilter() {
+      const calDays = state.stats?.calendar_days;
+      if (!calDays) return;
+      const cells = document.querySelectorAll('#calendar-grid .calendar-day');
+      const dateMap = new Map(calDays.map(d => [d.date, d]));
+
+      // Clear all filter classes + trend arrows
+      cells.forEach(c => {
+        c.classList.remove('filter-dim', 'filter-highlight');
+        const trend = c.querySelector('.day-trend');
+        if (trend) trend.remove();
+      });
+
+      if (!calendarFilter) {
+        renderCalendarTrends(calDays); // reset to default trends
+        return;
+      }
+
+      // Build sets of highlighted dates
+      const highlights = new Set();
+
+      if (calendarFilter === 'health') {
+        // Highlight danger + late night days
+        calDays.forEach(d => {
+          if (d.danger || d.lateNight) highlights.add(d.date);
+        });
+      } else if (calendarFilter === 'night') {
+        calDays.forEach(d => {
+          if (d.lateNight) highlights.add(d.date);
+        });
+      } else if (calendarFilter === 'streak') {
+        // Highlight consecutive work days (streaks of 3+)
+        let streak = [];
+        for (const d of calDays) {
+          if (d.sessions > 0) {
+            streak.push(d.date);
+          } else {
+            if (streak.length >= 3) streak.forEach(s => highlights.add(s));
+            streak = [];
+          }
+        }
+        if (streak.length >= 3) streak.forEach(s => highlights.add(s));
+      } else if (calendarFilter === 'trend') {
+        // All active days get trend arrows (week-over-week comparison)
+        calDays.forEach(d => { if (d.sessions > 0) highlights.add(d.date); });
+      }
+
+      // Apply dim/highlight
+      cells.forEach(c => {
+        const date = c.dataset?.date;
+        if (!date) return;
+        if (c.classList.contains('empty')) return;
+        const d = dateMap.get(date);
+        if (!d || d.sessions === 0) { c.classList.add('filter-dim'); return; }
+        if (highlights.has(date)) {
+          c.classList.add('filter-highlight');
+        } else {
+          c.classList.add('filter-dim');
+        }
+      });
+
+      // For trend filter, add week-over-week arrows
+      if (calendarFilter === 'trend') {
+        cells.forEach(c => {
+          const date = c.dataset?.date;
+          if (!date || c.classList.contains('empty')) return;
+          const d = dateMap.get(date);
+          if (!d || d.sessions === 0) return;
+          // Find same weekday last week
+          const dt = new Date(date + 'T12:00:00');
+          dt.setDate(dt.getDate() - 7);
+          const prevDate = dt.toISOString().slice(0, 10);
+          const prev = dateMap.get(prevDate);
+          if (!prev) return;
+          const curVal = d.sessions, prevVal = prev.sessions;
+          let arrow = '', cls = 'flat';
+          if (curVal > prevVal) { arrow = '^'; cls = 'up'; }
+          else if (curVal < prevVal) { arrow = 'v'; cls = 'down'; }
+          if (arrow) {
+            const span = document.createElement('span');
+            span.className = `day-trend ${cls}`;
+            span.textContent = arrow;
+            c.appendChild(span);
+          }
+        });
+      }
+
+      // Update trend strip to match filter context
+      renderCalendarTrends(calDays);
+    }
+
+    // --- Calendar Trend Summary ---
+    function renderCalendarTrends(calDays) {
+      const container = document.getElementById('calendar-trends');
+      if (!container || !calDays || calDays.length === 0) return;
+
+      const activeDays = calDays.filter(d => d.sessions > 0);
+      const totalDays = calDays.length;
+      const restDays = totalDays - activeDays.length;
+
+      // Streaks
+      let maxStreak = 0, curStreak = 0, maxRest = 0, curRest = 0;
+      for (const d of calDays) {
+        if (d.sessions > 0) {
+          curStreak++; maxStreak = Math.max(maxStreak, curStreak);
+          if (curRest > 0) { maxRest = Math.max(maxRest, curRest); curRest = 0; }
+        } else {
+          curRest++; maxRest = Math.max(maxRest, curRest);
+          if (curStreak > 0) { curStreak = 0; }
+        }
+      }
+
+      // Night work frequency
+      const nightDays = calDays.filter(d => d.lateNight).length;
+      const heavyDays = calDays.filter(d => d.danger).length;
+
+      // Week-over-week: last 7 active days vs prior 7
+      const last7 = calDays.slice(-7);
+      const prev7 = calDays.slice(-14, -7);
+      const last7Sessions = last7.reduce((s, d) => s + d.sessions, 0);
+      const prev7Sessions = prev7.reduce((s, d) => s + d.sessions, 0);
+      const wowChange = prev7Sessions > 0 ? ((last7Sessions - prev7Sessions) / prev7Sessions * 100).toFixed(0) : 0;
+      const wowDir = last7Sessions > prev7Sessions ? 'up' : last7Sessions < prev7Sessions ? 'down' : '';
+      const wowArrow = wowDir === 'up' ? '^' : wowDir === 'down' ? 'v' : '-';
+
+      // Avg sessions per active day
+      const avgPerDay = activeDays.length > 0 ? (activeDays.reduce((s, d) => s + d.sessions, 0) / activeDays.length).toFixed(1) : '0';
+
+      // Build chips based on active filter
+      let chips = '';
+
+      if (calendarFilter === 'health') {
+        chips += chip('Heavy days', heavyDays + ' / ' + totalDays, heavyDays > 5 ? 'up' : '');
+        chips += chip('Night work', nightDays + ' days', nightDays > 7 ? 'up' : '');
+        chips += chip('Max streak', maxStreak + ' days', maxStreak > 10 ? 'up' : '');
+        chips += chip('Max rest', maxRest + ' days', maxRest < 2 ? 'up' : 'down');
+        // Health verdict
+        const score = Math.max(0, 100 - heavyDays * 5 - nightDays * 3 - Math.max(0, maxStreak - 7) * 4);
+        chips += chip('Health score', score + '/100', score < 50 ? 'up' : 'down');
+      } else if (calendarFilter === 'night') {
+        chips += chip('Late nights', nightDays + ' / ' + totalDays);
+        const nightPct = totalDays > 0 ? (nightDays / totalDays * 100).toFixed(0) : 0;
+        chips += chip('Night %', nightPct + '%', nightPct > 30 ? 'up' : '');
+        // Night trend: last 30 vs first 30
+        const half = Math.floor(calDays.length / 2);
+        const firstHalfNights = calDays.slice(0, half).filter(d => d.lateNight).length;
+        const secondHalfNights = calDays.slice(half).filter(d => d.lateNight).length;
+        const nightTrend = secondHalfNights > firstHalfNights ? 'Increasing' : secondHalfNights < firstHalfNights ? 'Decreasing' : 'Stable';
+        chips += chip('Night trend', nightTrend, secondHalfNights > firstHalfNights ? 'up' : 'down');
+      } else if (calendarFilter === 'streak') {
+        chips += chip('Longest streak', maxStreak + ' days');
+        chips += chip('Longest rest', maxRest + ' days');
+        chips += chip('Active days', activeDays.length + ' / ' + totalDays);
+        chips += chip('Avg/active day', avgPerDay + ' sessions');
+      } else if (calendarFilter === 'trend') {
+        chips += chip('This week', last7Sessions + ' sessions');
+        chips += chip('Last week', prev7Sessions + ' sessions');
+        chips += chip('Week change', (wowChange > 0 ? '+' : '') + wowChange + '%', wowDir);
+        chips += chip('Avg/day', avgPerDay + ' sessions');
+      } else {
+        // Default: compact overview
+        chips += chip('Active', activeDays.length + '/' + totalDays + ' days');
+        chips += chip('WoW', (wowChange > 0 ? '+' : '') + wowChange + '%', wowDir);
+        chips += chip('Streak', maxStreak + 'd');
+        chips += chip('Night', nightDays + 'd', nightDays > 7 ? 'up' : '');
+        if (heavyDays > 0) chips += chip('Heavy', heavyDays + 'd', 'up');
+      }
+
+      container.innerHTML = chips;
+
+      function chip(label, value, arrowDir) {
+        const arrow = arrowDir === 'up' ? '<span class="trend-arrow up">^</span>'
+                    : arrowDir === 'down' ? '<span class="trend-arrow down">v</span>' : '';
+        return `<span class="trend-chip"><span class="trend-label">${label}</span><span class="trend-value">${value}</span>${arrow}</span>`;
+      }
+    }
+
+    // --- Calendar Export ---
+    document.getElementById('calendar-export-csv')?.addEventListener('click', () => exportCalendar('csv'));
+    document.getElementById('calendar-export-md')?.addEventListener('click', () => exportCalendar('md'));
+
+    function exportCalendar(format) {
+      const calDays = state.stats?.calendar_days;
+      if (!calDays || calDays.length === 0) return;
+
+      const headers = ['Date', 'Day', 'Sessions', 'Duration (min)', 'Projects', 'Cost ($)', 'Lines Added', 'Late Night', 'Heavy Day'];
+      const rows = calDays.map(d => {
+        const dt = new Date(d.date + 'T12:00:00');
+        const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
+        return [d.date, dayName, d.sessions, d.duration, d.projects, d.cost.toFixed(2), d.linesAdded, d.lateNight ? 'Yes' : '', d.danger ? 'Yes' : ''];
+      });
+
+      let content, filename, mime;
+
+      if (format === 'csv') {
+        content = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        filename = `calendar-${calendarMode}-${new Date().toISOString().slice(0, 10)}.csv`;
+        mime = 'text/csv';
+      } else {
+        // Markdown table
+        const colWidths = headers.map((h, i) => Math.max(h.length, ...rows.map(r => String(r[i]).length)));
+        const pad = (s, w) => String(s).padEnd(w);
+        const headerLine = '| ' + headers.map((h, i) => pad(h, colWidths[i])).join(' | ') + ' |';
+        const sepLine = '| ' + colWidths.map(w => '-'.repeat(w)).join(' | ') + ' |';
+        const bodyLines = rows.map(r => '| ' + r.map((c, i) => pad(c, colWidths[i])).join(' | ') + ' |');
+
+        // Add summary at top
+        const activeDays = calDays.filter(d => d.sessions > 0);
+        const totalSessions = calDays.reduce((s, d) => s + d.sessions, 0);
+        const totalCost = calDays.reduce((s, d) => s + d.cost, 0);
+        const nightDays = calDays.filter(d => d.lateNight).length;
+
+        content = `# Session Calendar Export\n\n`;
+        content += `**Period:** ${calDays[0].date} to ${calDays[calDays.length - 1].date}\n`;
+        content += `**Mode:** ${calendarMode}\n`;
+        content += `**Active days:** ${activeDays.length}/${calDays.length} | **Sessions:** ${totalSessions} | **Cost:** $${totalCost.toFixed(2)} | **Late nights:** ${nightDays}\n\n`;
+        content += [headerLine, sepLine, ...bodyLines].join('\n') + '\n';
+        filename = `calendar-${calendarMode}-${new Date().toISOString().slice(0, 10)}.md`;
+        mime = 'text/markdown';
+      }
+
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // --- Wellbeing Strip ---
+    function renderWellbeingStrip() {
+      const wb = state.stats?.wellbeing;
+      if (!wb) return;
+
+      const strip = document.getElementById('wellbeing-strip');
+      strip.style.display = '';
+
+      const breakClass = wb.avg_break_minutes < 5 ? 'danger' : wb.avg_break_minutes < 15 ? 'warn' : 'good';
+      const streakClass = wb.current_streak_days > 10 ? 'danger' : wb.current_streak_days > 5 ? 'warn' : 'good';
+      const lateClass = wb.late_night_days > 10 ? 'danger' : wb.late_night_days > 3 ? 'warn' : 'good';
+      const weekendClass = wb.weekend_work_days > 4 ? 'warn' : 'good';
+
+      strip.innerHTML = `
+        <div class="wellbeing-metric">
+          <span class="wb-label">Avg Break</span>
+          <span class="wb-value ${breakClass}">${wb.avg_break_minutes}m</span>
+        </div>
+        <div class="wellbeing-metric">
+          <span class="wb-label">Streak</span>
+          <span class="wb-value ${streakClass}">${wb.current_streak_days}d</span>
+        </div>
+        <div class="wellbeing-metric">
+          <span class="wb-label">Late Nights</span>
+          <span class="wb-value ${lateClass}">${wb.late_night_days}</span>
+        </div>
+        <div class="wellbeing-metric">
+          <span class="wb-label">Weekend Work</span>
+          <span class="wb-value ${weekendClass}">${wb.weekend_work_days}d</span>
+        </div>
+        <div class="wellbeing-metric">
+          <span class="wb-label">Danger Days</span>
+          <span class="wb-value ${wb.danger_days.length > 3 ? 'danger' : wb.danger_days.length > 0 ? 'warn' : 'good'}">${wb.danger_days.length}</span>
+        </div>
+      `;
     }
 
     function renderChart() {
@@ -1647,8 +3540,10 @@
       filterLabel.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
       // Re-render chart with selection state
       renderChart();
-      // Reload with date filter
-      loadSessions(1, date);
+      // Reload with date filter then scroll to sessions
+      loadSessions(1, date).then(() => {
+        document.getElementById('session-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     }
 
     function clearDateFilter() {
@@ -1666,7 +3561,7 @@
       try {
         let url = `/api/sessions?page=${page}&limit=200`;
         if (dateFilter) url += `&date=${dateFilter}`;
-        const res = await fetch(url);
+        const res = await safeFetch(url);
         const data = await res.json();
         state.allSessions = data.sessions;
         state.page = data.page;
@@ -1686,24 +3581,45 @@
         document.getElementById('next-page').disabled = data.page >= data.pages;
       } catch (e) {
         console.error('Failed to load sessions:', e);
+        document.getElementById('session-list').innerHTML = `<div style="padding:20px;color:var(--c-brand);">${e.name === 'AbortError' ? 'Request timed out. Server may be slow.' : 'Failed to load sessions. Check server connection.'}</div>`;
       }
     }
 
     // --- Smart Filters ---
     function generateSmartFilters(sessions) {
       const projectCounts = {};
+      const classCounts = {};
+
       for (const s of sessions) {
         const proj = shortProject(s.project);
         if (proj) projectCounts[proj] = (projectCounts[proj] || 0) + 1;
+
+        // Classify each session
+        const tags = classifySession(s);
+        s._tags = tags; // cache for filtering
+        for (const tag of tags) {
+          classCounts[tag] = (classCounts[tag] || 0) + 1;
+        }
       }
-      // Sort by count, take top projects with > 1 session
-      const filters = Object.entries(projectCounts)
+
+      // Project filters (top 6)
+      const projectFilters = Object.entries(projectCounts)
         .filter(([, c]) => c > 1)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([proj, count]) => ({ label: proj.split('/').pop(), key: proj, count }));
+        .slice(0, 6)
+        .map(([proj, count]) => ({ label: proj.split('/').pop(), key: `project:${proj}`, count }));
 
-      state.smartFilters = filters;
+      // Classification filters
+      const classLabels = {
+        large: 'Large', medium: 'Medium', quick: 'Quick',
+        strategic: 'Strategic', tactical: 'Tactical', mechanical: 'Mechanical',
+        coding: 'Coding', research: 'Research', errors: 'Has Errors', interactive: 'Interactive'
+      };
+      const classFilters = Object.entries(classLabels)
+        .filter(([k]) => (classCounts[k] || 0) > 0)
+        .map(([k, label]) => ({ label, key: `class:${k}`, count: classCounts[k] || 0 }));
+
+      state.smartFilters = [...projectFilters, ...classFilters];
       renderSmartFilters();
     }
 
@@ -1711,15 +3627,24 @@
       const container = document.getElementById('smart-filters');
       let html = '';
       for (const f of state.smartFilters) {
-        const active = state.activeFilter === f.key ? 'active' : '';
+        const active = state.activeFilters.has(f.key) ? 'active' : '';
         html += `<button class="smart-filter ${active}" data-filter-key="${escapeHtml(f.key)}">${escapeHtml(f.label)}<span class="filter-count">${f.count}</span></button>`;
+      }
+      if (state.activeFilters.size > 0) {
+        html += `<button class="smart-filter" data-filter-key="__clear__" style="border-color:var(--c-brand);color:var(--c-brand)">Clear all</button>`;
       }
       container.innerHTML = html;
 
       container.querySelectorAll('.smart-filter').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.dataset.filterKey;
-          state.activeFilter = state.activeFilter === key ? null : key;
+          if (key === '__clear__') {
+            state.activeFilters.clear();
+          } else if (state.activeFilters.has(key)) {
+            state.activeFilters.delete(key);
+          } else {
+            state.activeFilters.add(key);
+          }
           state.expandedGroups.clear();
           renderSmartFilters();
           applyFiltersAndRender();
@@ -1742,9 +3667,17 @@
         );
       }
 
-      // Smart filter (project)
-      if (state.activeFilter) {
-        filtered = filtered.filter(s => shortProject(s.project) === state.activeFilter);
+      // Smart filters (multi-select: session must match ALL active filters)
+      if (state.activeFilters.size > 0) {
+        for (const key of state.activeFilters) {
+          if (key.startsWith('project:')) {
+            const proj = key.slice(8);
+            filtered = filtered.filter(s => shortProject(s.project) === proj);
+          } else if (key.startsWith('class:')) {
+            const cls = key.slice(6);
+            filtered = filtered.filter(s => (s._tags || []).includes(cls));
+          }
+        }
       }
 
       state.sessions = filtered;
@@ -1891,6 +3824,68 @@
       return '';
     }
 
+    // --- Session Badges ---
+    function renderSessionBadges(s) {
+      let badges = '';
+      // Cost
+      if (s.estimated_cost > 0) {
+        badges += `<span class="badge badge-cost">$${s.estimated_cost < 0.01 ? '<0.01' : s.estimated_cost.toFixed(2)}</span>`;
+      }
+      // Error dot
+      if (s.tool_errors > 0) {
+        badges += `<span class="badge badge-error" title="${s.tool_errors} errors">${s.tool_errors}err</span>`;
+      }
+      // Top 2 languages as tiny pills
+      if (s.languages) {
+        const langs = Object.entries(s.languages).sort((a, b) => b[1] - a[1]).slice(0, 2);
+        for (const [lang] of langs) {
+          const short = lang.length > 3 ? lang.slice(0, 3) : lang;
+          badges += `<span class="badge badge-lang">${escapeHtml(short)}</span>`;
+        }
+      }
+      // Task agent badge
+      if (s.uses_task_agent) {
+        badges += `<span class="badge badge-task" title="Uses Task agent">T</span>`;
+      }
+      // Lines delta
+      const linesDelta = (s.lines_added || 0) - (s.lines_removed || 0);
+      if (linesDelta !== 0) {
+        const cls = linesDelta > 0 ? 'badge-lines' : 'badge-lines negative';
+        badges += `<span class="badge ${cls}">${linesDelta > 0 ? '+' : ''}${linesDelta}</span>`;
+      }
+      return badges ? `<span class="session-badges">${badges}</span>` : '';
+    }
+
+    // --- Session Classification ---
+    function classifySession(s) {
+      const totalTokens = (s.input_tokens || 0) + (s.output_tokens || 0);
+      const duration = s.duration_minutes || 0;
+      const toolCount = Object.values(s.tool_counts || {}).reduce((sum, c) => sum + c, 0);
+      const hasErrors = (s.tool_errors || 0) > 0;
+      const linesChanged = (s.lines_added || 0) + (s.lines_removed || 0);
+
+      const tags = [];
+
+      // Size classification
+      if (totalTokens > 500000 || duration > 60) tags.push('large');
+      else if (totalTokens > 100000 || duration > 15) tags.push('medium');
+      else if (totalTokens < 20000 && duration < 5) tags.push('quick');
+      else tags.push('small');
+
+      // Value/semantic classification
+      if (s.uses_task_agent || toolCount > 30 || linesChanged > 200) tags.push('strategic');
+      else if (toolCount > 10 || linesChanged > 50) tags.push('tactical');
+      else tags.push('mechanical');
+
+      // Nature
+      if (linesChanged > 100 || (s.git_commits || 0) > 0) tags.push('coding');
+      if (s.uses_web_search) tags.push('research');
+      if (hasErrors) tags.push('errors');
+      if ((s.user_messages || 0) > 5) tags.push('interactive');
+
+      return tags;
+    }
+
     // --- Render Grouped Session List ---
     function renderGroupedSessionList(sessions, containerId) {
       const container = document.getElementById(containerId);
@@ -1914,6 +3909,7 @@
             html += `<div class="session-row" data-session-id="${s.session_id}">
               <span class="session-time">${formatDate(s.start_time)}</span>
               <span class="session-summary">${escapeHtml(s.summary || s.first_prompt || s.session_id)}${preview}</span>
+              ${renderSessionBadges(s)}
               <span class="session-project">${escapeHtml(shortProject(s.project))}</span>
               <span class="session-tokens">${formatTokens(totalTokens)}</span>
             </div>`;
@@ -2029,6 +4025,8 @@
           ['Tokens In', formatTokens(meta.input_tokens || 0)],
           ['Tokens Out', formatTokens(meta.output_tokens || 0)],
           ['Lines +/-', `+${meta.lines_added || 0} / -${meta.lines_removed || 0}`],
+          ['Est. Cost', '$' + (meta.estimated_cost || 0).toFixed(2)],
+          ['Errors', meta.tool_errors || 0],
         ];
         let html = '';
         for (const [k, v] of rows) {
@@ -2144,7 +4142,7 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       detailContainer.innerHTML = '<div class="loading visible">Loading transcript</div>';
 
       try {
-        const res = await fetch(`/api/transcript/${sessionId}`);
+        const res = await safeFetch(`/api/transcript/${sessionId}`, { timeout: 60000 });
         const data = await res.json();
 
         if (data.error) {
@@ -2258,10 +4256,11 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       try {
         const meta = state.sessions.find(s => s.session_id === sessionId);
         const focus = meta ? `session in project ${meta.project || 'unknown'}, summary: ${meta.summary || meta.first_prompt || ''}` : `session ${sessionId}`;
-        const res = await fetch('/api/actions', {
+        const res = await safeFetch('/api/actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ focus: `Analyze this specific ${focus}. Session ID: ${sessionId}` }),
+          timeout: 120000,
         });
         const data = await res.json();
 
@@ -2315,10 +4314,10 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       if (state.searchMode === 'text') {
         // Direct REST search
         try {
-          const res = await fetch(`/api/sessions?search=${encodeURIComponent(query)}&limit=50`);
+          const res = await safeFetch(`/api/sessions?search=${encodeURIComponent(query)}&limit=50`);
           const data = await res.json();
           loading.classList.remove('visible');
-          renderSessionList(data.sessions, 'search-results');
+          renderGroupedSessionList(data.sessions, 'search-results');
           responseEl.textContent = `Found ${data.total} sessions matching "${query}"`;
           responseEl.classList.add('visible');
         } catch (e) {
@@ -2371,26 +4370,346 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       if (e.key === 'Enter') askInsightsAgent();
     });
 
+    // Suggestion presets toggle
+    document.getElementById('suggestions-toggle').addEventListener('click', () => {
+      const presets = document.getElementById('insight-presets');
+      presets.style.display = presets.style.display === 'none' ? '' : 'none';
+    });
+
+    // Preset buttons
+    document.querySelectorAll('.insight-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('insights-input').value = btn.dataset.q;
+        askInsightsAgent();
+      });
+    });
+
+    // --- Report list management (localStorage-persisted) ---
+    const REPORTS_KEY = 'session-explorer-reports';
+    let reportCounter = 0;
+
+    function saveReportsToStorage() {
+      const cards = document.querySelectorAll('.report-card');
+      const reports = [];
+      cards.forEach(card => {
+        reports.push({
+          title: card.querySelector('.report-card-title').textContent,
+          html: card.querySelector('.report-card-body').innerHTML,
+          time: card.querySelector('.report-card-time').textContent,
+          ts: card.dataset.ts || Date.now(),
+        });
+      });
+      try { localStorage.setItem(REPORTS_KEY, JSON.stringify(reports)); } catch {}
+    }
+
+    function loadReportsFromStorage() {
+      try {
+        const data = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+        if (!Array.isArray(data) || data.length === 0) return;
+        // Load oldest first so prepend order results in newest on top
+        for (let i = data.length - 1; i >= 0; i--) {
+          const r = data[i];
+          createReportCardDOM(r.title, r.html, r.time, r.ts, false);
+        }
+        updateReportIndex();
+      } catch {}
+    }
+
+    function createReportCardDOM(title, bodyHtml, timeStr, ts, expanded) {
+      const reportList = document.getElementById('report-list');
+      const header = document.getElementById('report-list-header');
+      header.style.display = '';
+
+      const id = `report-${++reportCounter}`;
+      const card = document.createElement('div');
+      card.className = expanded ? 'report-card expanded' : 'report-card';
+      card.id = id;
+      card.dataset.ts = ts || Date.now();
+      card.dataset.title = title;
+      card.innerHTML = `
+        <div class="report-card-header">
+          <span class="report-card-toggle">&#9654;</span>
+          <span class="report-card-title">${escapeHtml(title)}</span>
+          <span class="report-card-time">${escapeHtml(timeStr)}</span>
+        </div>
+        <div class="report-card-body agent-response visible">
+          ${bodyHtml}
+        </div>
+        <div class="report-card-actions">
+          <button class="report-action-btn" data-action="download-md">MD</button>
+          <button class="report-action-btn" data-action="download-pdf">PDF</button>
+        </div>
+      `;
+
+      card.querySelector('.report-card-header').addEventListener('click', () => {
+        card.classList.toggle('expanded');
+      });
+
+      // Download handlers
+      card.querySelector('[data-action="download-md"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadReportMarkdown(card);
+      });
+      card.querySelector('[data-action="download-pdf"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadReportPdf(card);
+      });
+
+      reportList.prepend(card);
+      return card;
+    }
+
+    // Convert HTML report body back to approximate markdown
+    function htmlToMarkdown(html) {
+      let md = html;
+      // Strip cost display
+      md = md.replace(/<div class="cost-display">[\s\S]*?<\/div>/g, '');
+      // Headings
+      md = md.replace(/<h1>(.*?)<\/h1>/g, '# $1\n\n');
+      md = md.replace(/<h2>(.*?)<\/h2>/g, '## $1\n\n');
+      md = md.replace(/<h3>(.*?)<\/h3>/g, '### $1\n\n');
+      md = md.replace(/<h4>(.*?)<\/h4>/g, '#### $1\n\n');
+      // Bold/italic
+      md = md.replace(/<strong>(.*?)<\/strong>/g, '**$1**');
+      md = md.replace(/<em>(.*?)<\/em>/g, '*$1*');
+      // Code
+      md = md.replace(/<code>(.*?)<\/code>/g, '`$1`');
+      md = md.replace(/<pre>`([\s\S]*?)`<\/pre>/g, '```\n$1\n```\n\n');
+      md = md.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, '```\n$1\n```\n\n');
+      // Lists
+      md = md.replace(/<ul>([\s\S]*?)<\/ul>/g, (_, items) =>
+        items.replace(/<li>(.*?)<\/li>/g, '- $1\n') + '\n');
+      md = md.replace(/<ol>([\s\S]*?)<\/ol>/g, (_, items) => {
+        let i = 0;
+        return items.replace(/<li>(.*?)<\/li>/g, () => `${++i}. ` + '$1\n') + '\n';
+      });
+      // Paragraphs and breaks
+      md = md.replace(/<br\s*\/?>/g, '\n');
+      md = md.replace(/<p>([\s\S]*?)<\/p>/g, '$1\n\n');
+      md = md.replace(/<hr\s*\/?>/g, '---\n\n');
+      // Tables (keep as-is, strip tags)
+      md = md.replace(/<\/?table>/g, '');
+      md = md.replace(/<\/?thead>/g, '');
+      md = md.replace(/<\/?tbody>/g, '');
+      md = md.replace(/<tr>([\s\S]*?)<\/tr>/g, (_, cells) => {
+        const cols = [];
+        cells.replace(/<t[hd]>(.*?)<\/t[hd]>/g, (__, c) => cols.push(c));
+        return '| ' + cols.join(' | ') + ' |\n';
+      });
+      // Unescape HTML entities
+      md = md.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+      // Clean up
+      md = md.replace(/<[^>]+>/g, ''); // strip remaining tags
+      md = md.replace(/\n{3,}/g, '\n\n').trim();
+      return md;
+    }
+
+    function downloadReportMarkdown(card) {
+      const title = card.dataset.title || 'report';
+      const body = card.querySelector('.report-card-body').innerHTML;
+      const md = `# ${title}\n\n${htmlToMarkdown(body)}`;
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 50)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadReportPdf(card) {
+      const title = card.dataset.title || 'report';
+      const body = card.querySelector('.report-card-body').innerHTML;
+      // Use browser print to PDF via a new window
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head>
+        <title>${escapeHtml(title)}</title>
+        <style>
+          body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; font-size: 14px; line-height: 1.7; color: #111; }
+          h1, h2, h3, h4 { font-family: Helvetica Neue, sans-serif; }
+          h1 { font-size: 22px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+          h2 { font-size: 17px; margin-top: 24px; }
+          code { background: #f5f5f5; padding: 1px 4px; font-size: 12px; }
+          pre { background: #f5f5f5; padding: 12px; overflow-x: auto; font-size: 12px; }
+          table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+          th { background: #f5f5f5; font-weight: 600; }
+          ul, ol { padding-left: 20px; }
+        </style>
+      </head><body>
+        <h1>${escapeHtml(title)}</h1>
+        ${body}
+        <script>setTimeout(()=>{window.print();window.close()},300)<\/script>
+      </body></html>`);
+      win.document.close();
+    }
+
+    // --- Flashcard review mode ---
+    let flashcardIndex = 0;
+    let flashcardItems = [];
+    let flashcardAnimating = false;
+
+    document.getElementById('report-review-btn').addEventListener('click', openFlashcards);
+    document.getElementById('flashcard-close').addEventListener('click', closeFlashcards);
+    document.getElementById('flashcard-prev').addEventListener('click', () => navigateFlashcard(-1));
+    document.getElementById('flashcard-next').addEventListener('click', () => navigateFlashcard(1));
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('flashcard-overlay').classList.contains('visible')) return;
+      if (e.key === 'ArrowLeft') navigateFlashcard(-1);
+      if (e.key === 'ArrowRight') navigateFlashcard(1);
+      if (e.key === 'Escape') closeFlashcards();
+    });
+    // Click overlay background to close
+    document.getElementById('flashcard-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeFlashcards();
+    });
+
+    let flashcardTriggerEl = null; // store focus return target
+
+    function openFlashcards() {
+      const cards = document.querySelectorAll('.report-card');
+      if (cards.length === 0) return;
+      flashcardItems = [...cards].map(card => ({
+        title: card.dataset.title || card.querySelector('.report-card-title').textContent,
+        html: card.querySelector('.report-card-body').innerHTML,
+      }));
+      flashcardIndex = 0;
+      flashcardTriggerEl = document.activeElement;
+      renderFlashcard();
+      const overlay = document.getElementById('flashcard-overlay');
+      overlay.classList.add('visible');
+      overlay.setAttribute('aria-modal', 'true');
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+      document.getElementById('flashcard-close').focus();
+    }
+
+    function closeFlashcards() {
+      const overlay = document.getElementById('flashcard-overlay');
+      overlay.classList.remove('visible');
+      overlay.removeAttribute('aria-modal');
+      document.body.style.overflow = '';
+      if (flashcardTriggerEl) { flashcardTriggerEl.focus(); flashcardTriggerEl = null; }
+    }
+
+    function navigateFlashcard(dir) {
+      if (flashcardAnimating) return;
+      const newIndex = flashcardIndex + dir;
+      if (newIndex < 0 || newIndex >= flashcardItems.length) return;
+
+      // Skip animation if user prefers reduced motion
+      if (prefersReducedMotion) {
+        flashcardIndex = newIndex;
+        renderFlashcard();
+        return;
+      }
+
+      const body = document.getElementById('flashcard-body');
+      const slideOutClass = dir > 0 ? 'slide-out-left' : 'slide-out-right';
+      const slideInClass = dir > 0 ? 'slide-in-left' : 'slide-in-right';
+
+      flashcardAnimating = true;
+      body.classList.add(slideOutClass);
+
+      setTimeout(() => {
+        flashcardIndex = newIndex;
+        body.classList.remove(slideOutClass);
+        body.className = 'flashcard-body agent-response visible ' + slideInClass;
+        renderFlashcard(true);
+        setTimeout(() => {
+          body.classList.remove(slideInClass);
+          flashcardAnimating = false;
+        }, 260);
+      }, 200);
+    }
+
+    function renderFlashcard(skipBodyClass) {
+      const item = flashcardItems[flashcardIndex];
+      if (!item) return;
+      document.getElementById('flashcard-counter').textContent = `${flashcardIndex + 1}/${flashcardItems.length}`;
+      document.getElementById('flashcard-title').textContent = item.title;
+      document.getElementById('flashcard-body').innerHTML = item.html;
+      document.getElementById('flashcard-prev').disabled = flashcardIndex === 0;
+      document.getElementById('flashcard-next').disabled = flashcardIndex === flashcardItems.length - 1;
+      // Progress bar
+      const pct = flashcardItems.length > 1 ? ((flashcardIndex + 1) / flashcardItems.length * 100) : 100;
+      document.getElementById('flashcard-progress').style.width = pct + '%';
+      // Dots (max 10 shown, otherwise just counter)
+      const dotsEl = document.getElementById('flashcard-dots');
+      if (flashcardItems.length <= 10) {
+        dotsEl.innerHTML = flashcardItems.map((_, i) =>
+          `<span class="flashcard-dot${i === flashcardIndex ? ' active' : ''}"></span>`
+        ).join('');
+      } else {
+        dotsEl.innerHTML = '';
+      }
+    }
+
+    function addReportCard(title, contentHtml, costInfo) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const bodyHtml = contentHtml + (costInfo ? `<div class="cost-display">Agent cost: $${costInfo.cost.toFixed(4)} (${costInfo.turns} turns)</div>` : '');
+
+      const card = createReportCardDOM(title, bodyHtml, timeStr, Date.now(), true);
+
+      updateReportIndex();
+      saveReportsToStorage();
+
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function updateReportIndex() {
+      const indexContainer = document.getElementById('report-index');
+      const indexList = document.getElementById('report-index-list');
+      const cards = document.querySelectorAll('.report-card');
+
+      if (cards.length === 0) {
+        indexContainer.style.display = 'none';
+        return;
+      }
+
+      indexContainer.style.display = '';
+      indexList.innerHTML = '';
+
+      cards.forEach(card => {
+        const title = card.querySelector('.report-card-title').textContent;
+        const time = card.querySelector('.report-card-time').textContent;
+        const btn = document.createElement('button');
+        btn.className = 'report-index-item';
+        btn.textContent = `${time} - ${title}`;
+        btn.addEventListener('click', () => {
+          switchView('insights');
+          card.classList.add('expanded');
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        indexList.appendChild(btn);
+      });
+    }
+
+    // Clear all reports
+    document.getElementById('report-clear-btn').addEventListener('click', () => {
+      document.getElementById('report-list').innerHTML = '';
+      document.getElementById('report-list-header').style.display = 'none';
+      document.getElementById('report-index').style.display = 'none';
+      document.getElementById('report-index-list').innerHTML = '';
+      try { localStorage.removeItem(REPORTS_KEY); } catch {}
+    });
+
+    // Load persisted reports on startup
+    loadReportsFromStorage();
+
     async function loadInsightsReport() {
       const loading = document.getElementById('insights-loading');
-      const responseEl = document.getElementById('insights-response');
       loading.classList.add('visible');
-      responseEl.classList.remove('visible');
 
       try {
         const response = await streamAgent(
           'Get the latest insights report and present it in a clear, organized way. Highlight the most important improvement suggestions.'
         );
         loading.classList.remove('visible');
-        responseEl.innerHTML = renderMarkdown(response.text);
-        responseEl.classList.add('visible');
-        if (response.cost) {
-          responseEl.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
-        }
+        addReportCard('Latest Insights Report', renderMarkdown(response.text), response.cost ? response : null);
       } catch (e) {
         loading.classList.remove('visible');
-        responseEl.textContent = `Error: ${e}`;
-        responseEl.classList.add('visible');
+        addReportCard('Latest Insights Report', `<p style="color:red;">Error: ${escapeHtml(String(e))}</p>`, null);
       }
     }
 
@@ -2402,24 +4721,19 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       btn.disabled = true;
 
       const loading = document.getElementById('insights-loading');
-      const responseEl = document.getElementById('insights-response');
+      const loadingText = document.getElementById('insights-loading-text');
+      loadingText.textContent = `Analyzing: "${query.slice(0, 60)}${query.length > 60 ? '...' : ''}"`;
       loading.classList.add('visible');
-      responseEl.classList.remove('visible');
 
       try {
         const response = await streamAgent(
           `Analyze my Claude Code usage to answer: ${query}. Use get_dashboard_stats and get_insights_report tools as needed.`
         );
         loading.classList.remove('visible');
-        responseEl.innerHTML = renderMarkdown(response.text);
-        responseEl.classList.add('visible');
-        if (response.cost) {
-          responseEl.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
-        }
+        addReportCard(query, renderMarkdown(response.text), response.cost ? response : null);
       } catch (e) {
         loading.classList.remove('visible');
-        responseEl.textContent = `Error: ${e}`;
-        responseEl.classList.add('visible');
+        addReportCard(query, `<p style="color:red;">Error: ${escapeHtml(String(e))}</p>`, null);
       }
       btn.disabled = false;
     }
@@ -2429,12 +4743,20 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       return new Promise((resolve, reject) => {
         let fullText = '';
         let result = {};
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
 
         fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: promptText }),
+          signal: controller.signal,
         }).then(response => {
+          if (!response.ok) {
+            clearTimeout(timeout);
+            reject(new Error(`Server error: ${response.status}`));
+            return;
+          }
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
@@ -2442,6 +4764,7 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
           function read() {
             reader.read().then(({ done, value }) => {
               if (done) {
+                clearTimeout(timeout);
                 resolve({ text: fullText, ...result });
                 return;
               }
@@ -2454,6 +4777,7 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
                 if (!line.startsWith('data: ')) continue;
                 const data = line.slice(6);
                 if (data === '[DONE]') {
+                  clearTimeout(timeout);
                   resolve({ text: fullText, ...result });
                   return;
                 }
@@ -2491,6 +4815,12 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
         return `\x00CB${codeBlocks.length - 1}\x00`;
       });
 
+      // Ensure headings always have a blank line before them
+      // Handles cases like "some text.## Heading" or "text\n## Heading"
+      // [^\n#] avoids splitting multi-hash headings (## shouldn't become # + #)
+      text = text.replace(/([^\n#])(#{1,6} )/g, '$1\n\n$2');
+      text = text.replace(/\n(#{1,6} )/g, '\n\n$1');
+
       // Split into blocks by double newline
       const blocks = text.split(/\n\n+/);
       const html = [];
@@ -2506,15 +4836,22 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
           continue;
         }
 
-        // Heading (check most-specific first)
-        const h4 = trimmed.match(/^#{4} (.+)$/m);
-        const h3 = trimmed.match(/^#{3} (.+)$/m);
-        const h2 = trimmed.match(/^#{2} (.+)$/m);
-        const h1 = trimmed.match(/^# (.+)$/m);
-        if (h4) { html.push(`<h4>${inlineFormat(h4[1])}</h4>`); continue; }
-        if (h3) { html.push(`<h3>${inlineFormat(h3[1])}</h3>`); continue; }
-        if (h2) { html.push(`<h2>${inlineFormat(h2[1])}</h2>`); continue; }
-        if (h1) { html.push(`<h1>${inlineFormat(h1[1])}</h1>`); continue; }
+        // Skip bare heading markers (# ## ### etc. with no text)
+        if (/^#{1,6}\s*$/.test(trimmed)) continue;
+
+        // Heading (h1-h6) -- if block starts with heading, render it
+        // and any trailing content as a paragraph
+        const headingMatch = trimmed.match(/^(#{1,6}) (.+)$/m);
+        if (headingMatch) {
+          const level = Math.min(headingMatch[1].length, 4); // cap at h4 for styling
+          const tag = `h${level}`;
+          html.push(`<${tag}>${inlineFormat(headingMatch[2])}</${tag}>`);
+          const afterHeading = trimmed.slice(headingMatch[0].length).trim();
+          if (afterHeading) {
+            html.push(`<p>${inlineFormat(afterHeading.replace(/\n/g, '<br>'))}</p>`);
+          }
+          continue;
+        }
 
         // Horizontal rule
         if (/^---+$/.test(trimmed)) { html.push('<hr>'); continue; }
@@ -2548,7 +4885,10 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
         html.push(`<p>${inlineFormat(trimmed.replace(/\n/g, '<br>'))}</p>`);
       }
 
-      return html.join('\n');
+      // Replace any remaining code block placeholders that weren't standalone blocks
+      let result = html.join('\n');
+      result = result.replace(/\x00CB(\d+)\x00/g, (_, idx) => codeBlocks[parseInt(idx)] || '');
+      return result;
     }
 
     function inlineFormat(text) {
@@ -2591,41 +4931,54 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       const btn = document.getElementById('generate-actions-btn');
       const loading = document.getElementById('insights-loading');
       const cardsEl = document.getElementById('action-cards');
-      const responseEl = document.getElementById('insights-response');
 
       btn.disabled = true;
       btn.textContent = 'Analyzing...';
+      const loadingText = document.getElementById('insights-loading-text');
+      loadingText.textContent = 'Reading session data and generating actionable improvements...';
       loading.classList.add('visible');
       cardsEl.innerHTML = '';
-      responseEl.classList.remove('visible');
+
+      // Animate loading steps
+      const steps = [
+        'Reading session statistics...',
+        'Analyzing tool usage patterns...',
+        'Detecting error patterns...',
+        'Generating improvement suggestions...',
+      ];
+      let stepIdx = 0;
+      const stepTimer = setInterval(() => {
+        stepIdx = (stepIdx + 1) % steps.length;
+        loadingText.textContent = steps[stepIdx];
+      }, 3000);
 
       try {
-        const res = await fetch('/api/actions', {
+        const res = await safeFetch('/api/actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
+          timeout: 120000,
         });
         const data = await res.json();
 
+        clearInterval(stepTimer);
         loading.classList.remove('visible');
 
         if (data.error) {
-          responseEl.textContent = `Error: ${data.error}`;
-          responseEl.classList.add('visible');
+          addReportCard('Generate Actions', `<p style="color:red;">Error: ${escapeHtml(data.error)}</p>`, null);
           return;
         }
 
         if (data.actions && data.actions.length > 0) {
           renderActionCards(data.actions);
         } else {
-          responseEl.textContent = 'No actionable insights generated.';
-          responseEl.classList.add('visible');
+          addReportCard('Generate Actions', '<p>No actionable insights generated.</p>', null);
         }
       } catch (e) {
         loading.classList.remove('visible');
-        responseEl.textContent = `Error: ${e}`;
-        responseEl.classList.add('visible');
+        addReportCard('Generate Actions', `<p style="color:red;">Error: ${escapeHtml(String(e))}</p>`, null);
       } finally {
+        clearInterval(stepTimer);
         btn.disabled = false;
         btn.textContent = 'Generate Actions';
       }
@@ -2698,10 +5051,11 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
           btn.textContent = 'Applying...';
 
           try {
-            const res = await fetch('/api/apply-action', {
+            const res = await safeFetch('/api/apply-action', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ artifact }),
+              timeout: 60000,
             });
             const data = await res.json();
 
@@ -2725,13 +5079,320 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       });
     }
 
+    // --- Voice Control ---
+    const voiceState = { active: false, recognition: null };
+
+    // Context-aware system prompt -- includes current screen & available presets
+    function buildVoicePrompt() {
+      const currentView = document.querySelector('.nav-tab.active')?.dataset?.view || 'overview';
+      const presetNames = [...document.querySelectorAll('.insight-preset')].map(b => b.textContent).join(', ');
+      return `You are a voice controller for a Session Explorer dashboard. The user is on the "${currentView}" tab.
+Parse the spoken command into JSON. Return ONLY valid JSON.
+Actions:
+{"action":"filter_project","params":{"project":"name"}}
+{"action":"filter_class","params":{"class":"large|medium|quick|strategic|tactical|mechanical|coding|research|errors|interactive"}}
+{"action":"clear_filters","params":{}}
+{"action":"open_session","params":{"query":"description"}}
+{"action":"search","params":{"query":"terms"}}
+{"action":"generate_actions","params":{}} -- generates actionable improvement cards
+{"action":"ask_insight","params":{"query":"question about usage"}} -- asks the insights agent a question
+{"action":"show_errors","params":{}}
+{"action":"navigate","params":{"tab":"overview|search|session|insights"}}
+{"action":"show_stats","params":{}}
+Available insight presets: ${presetNames}
+If the user says a preset name (like "tool usage audit" or "error patterns"), use ask_insight with the matching preset's full question.
+If the user says "generate insights" or "generate actions", use generate_actions.
+If the user says "analyze" or "ask about" something, use ask_insight.
+If uncertain, use search with the user's full utterance.`;
+    }
+
+    const voiceActions = {
+      filter_project: (params) => {
+        const proj = params.project?.toLowerCase();
+        if (!proj) return 'No project specified';
+        const match = state.smartFilters.find(f =>
+          f.key.startsWith('project:') && f.key.toLowerCase().includes(proj)
+        );
+        if (match) {
+          state.activeFilters.add(match.key);
+          renderSmartFilters();
+          applyFiltersAndRender();
+          return `Filtered: ${match.label}`;
+        }
+        return `Project "${proj}" not found`;
+      },
+      filter_class: (params) => {
+        const cls = params.class;
+        if (!cls) return 'No class specified';
+        state.activeFilters.add(`class:${cls}`);
+        renderSmartFilters();
+        applyFiltersAndRender();
+        return `Filtered: ${cls}`;
+      },
+      clear_filters: () => {
+        state.activeFilters.clear();
+        state.findQuery = '';
+        document.getElementById('find-input').value = '';
+        renderSmartFilters();
+        applyFiltersAndRender();
+        return 'Filters cleared';
+      },
+      search: (params) => {
+        switchView('search');
+        document.getElementById('search-input').value = params.query || '';
+        doSearch();
+        return `Searching: ${params.query}`;
+      },
+      open_session: (params) => {
+        const q = (params.query || '').toLowerCase();
+        const match = state.allSessions.find(s =>
+          (s.summary || '').toLowerCase().includes(q) ||
+          (s.first_prompt || '').toLowerCase().includes(q)
+        );
+        if (match) { openSession(match.session_id); return `Opened session`; }
+        return 'No matching session';
+      },
+      generate_actions: () => {
+        switchView('insights');
+        generateActions();
+        return 'Generating actions...';
+      },
+      ask_insight: (params) => {
+        const q = params.query || '';
+        if (!q) return 'No question specified';
+        // Check if it matches a preset
+        const presetBtn = [...document.querySelectorAll('.insight-preset')].find(b =>
+          b.textContent.toLowerCase().includes(q.toLowerCase().split(' ')[0])
+        );
+        switchView('insights');
+        document.getElementById('insights-input').value = presetBtn ? presetBtn.dataset.q : q;
+        askInsightsAgent();
+        return `Analyzing: ${q.slice(0, 40)}`;
+      },
+      show_errors: () => {
+        state.activeFilters.add('class:errors');
+        renderSmartFilters();
+        applyFiltersAndRender();
+        return 'Showing error sessions';
+      },
+      navigate: (params) => {
+        switchView(params.tab || 'overview');
+        return `Navigated to ${params.tab}`;
+      },
+      show_stats: () => {
+        switchView('overview');
+        return 'Showing stats';
+      },
+    };
+
+    // Voice UI elements (compact tooltip)
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceTooltip = document.getElementById('voice-tooltip');
+    const voiceTooltipStatus = document.getElementById('voice-tooltip-status');
+    const voiceTooltipText = document.getElementById('voice-tooltip-text');
+    const voiceMiniWave = document.getElementById('voice-mini-wave');
+    const voiceTooltipResult = document.getElementById('voice-tooltip-result');
+
+    voiceBtn.addEventListener('click', () => {
+      // Always (re)start listening on click -- even if stopped or idle
+      if (voiceState.recognition) {
+        voiceState.recognition.abort();
+        voiceState.recognition = null;
+      }
+      startVoice();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') stopVoice();
+    });
+
+    function startVoice() {
+      voiceState.active = true;
+      voiceBtn.className = 'voice-fab listening';
+      voiceTooltip.classList.add('visible');
+      voiceMiniWave.classList.add('active');
+      voiceTooltipStatus.textContent = 'Listening';
+      voiceTooltipText.textContent = 'Speak a command...';
+      voiceTooltipText.className = 'voice-tooltip-text dim';
+      voiceTooltipResult.style.display = 'none';
+
+      try {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+          voiceTooltipStatus.textContent = 'Not supported';
+          voiceBtn.className = 'voice-fab idle';
+          return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event) => {
+          let transcript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          voiceTooltipText.textContent = transcript;
+          voiceTooltipText.className = 'voice-tooltip-text';
+
+          if (event.results[0].isFinal) {
+            processVoiceCommand(transcript);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          voiceTooltipStatus.textContent = event.error === 'no-speech' ? 'No speech detected' : `Error: ${event.error}`;
+          voiceBtn.className = 'voice-fab stopped';
+          voiceMiniWave.classList.remove('active');
+        };
+
+        recognition.onend = () => {
+          if (voiceBtn.className.includes('listening')) {
+            voiceTooltipStatus.textContent = 'Stopped';
+            voiceBtn.className = 'voice-fab stopped';
+            voiceMiniWave.classList.remove('active');
+          }
+        };
+
+        recognition.start();
+        voiceState.recognition = recognition;
+      } catch (e) {
+        voiceTooltipStatus.textContent = `Error: ${e.message}`;
+        voiceBtn.className = 'voice-fab stopped';
+      }
+    }
+
+    function stopVoice() {
+      voiceState.active = false;
+      voiceBtn.className = 'voice-fab idle';
+      voiceTooltip.classList.remove('visible');
+      voiceMiniWave.classList.remove('active');
+      if (voiceState.recognition) {
+        voiceState.recognition.abort();
+        voiceState.recognition = null;
+      }
+    }
+
+    async function processVoiceCommand(transcript) {
+      voiceBtn.className = 'voice-fab processing';
+      voiceMiniWave.classList.remove('active');
+      voiceTooltipStatus.textContent = 'Processing...';
+
+      try {
+        const response = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: `${buildVoicePrompt()}\n\nUser said: "${transcript}"` }),
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '', fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const event = JSON.parse(data);
+              if (event.type === 'text') fullText += event.content;
+            } catch {}
+          }
+        }
+
+        const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          let action;
+          try { action = JSON.parse(jsonMatch[0]); } catch { action = null; }
+          if (!action || !action.action) {
+            voiceTooltipStatus.textContent = 'Could not parse command';
+            voiceBtn.className = 'voice-fab stopped';
+            return;
+          }
+          const handler = voiceActions[action.action];
+          if (handler) {
+            const result = handler(action.params || {});
+            voiceTooltipStatus.textContent = 'Done';
+            voiceTooltipResult.textContent = result;
+            voiceTooltipResult.style.display = '';
+            // Brief speech confirmation
+            if ('speechSynthesis' in window) {
+              const u = new SpeechSynthesisUtterance(result);
+              u.rate = 1.2; u.volume = 0.6;
+              speechSynthesis.speak(u);
+            }
+          } else {
+            voiceTooltipStatus.textContent = `Unknown: ${action.action}`;
+          }
+        } else {
+          voiceTooltipStatus.textContent = 'Could not parse';
+        }
+      } catch (e) {
+        voiceTooltipStatus.textContent = `Error`;
+      }
+
+      voiceBtn.className = 'voice-fab stopped';
+
+      // Auto-hide tooltip after 3s
+      setTimeout(() => {
+        if (!voiceState.active) voiceTooltip.classList.remove('visible');
+      }, 3000);
+    }
+
+    // --- Quick action buttons ---
+    document.querySelectorAll('.quick-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.dataset.insightQuery;
+        if (query) {
+          switchView('insights');
+          document.getElementById('insights-input').value = query;
+          askInsightsAgent();
+        }
+      });
+    });
+
     // --- Init ---
     document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric'
     });
 
-    loadStats();
-    loadSessions();
+    async function initApp() {
+      // Restore URL state before loading data
+      restoreFromHash();
+
+      await Promise.all([loadStats(), loadSessions()]);
+
+      // Post-load visualizations
+      if (state.stats && state.allSessions.length > 0) {
+        computeQuickInsights(state.stats, state.allSessions);
+        renderSparklines();
+        renderSwimlane();
+        renderCalendar();
+        renderWellbeingStrip();
+      }
+
+      // Open pending session from URL hash
+      if (state._pendingSessionId) {
+        openSession(state._pendingSessionId);
+        delete state._pendingSessionId;
+      }
+
+      // Re-apply filters from hash
+      if (state.activeFilters.size > 0 || state.findQuery) {
+        renderSmartFilters();
+        applyFiltersAndRender();
+      }
+    }
+    initApp();
   </script>
 </body>
 </html>
