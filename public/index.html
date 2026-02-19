@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Session Explorer</title>
+  <style>
+    :root {
+      --c-brand: #FF4D3B;
+      --c-brand-dark: #E03E2E;
+      --c-white: #FFFFFF;
+      --c-ink: #111111;
+      --c-ink-light: #555555;
+      --c-meta: #999999;
+      --c-bg-alt: #F7F7F7;
+      --border-on-brand: rgba(0, 0, 0, 0.08);
+      --border-on-white: #EAEAEA;
+      --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-serif: Georgia, Times, serif;
+      --space-xs: 8px;
+      --space-sm: 16px;
+      --space-md: 24px;
+      --space-lg: 40px;
+      --space-xl: 80px;
+      /* Easing curves */
+      --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--c-white);
+      color: var(--c-ink);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .layout { display: flex; width: 100%; height: 100%; }
+
+    /* --- Left Panel (Brand) --- */
+    .panel-brand {
+      width: 40%;
+      min-width: 360px;
+      background: var(--c-brand);
+      color: var(--c-ink);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-on-brand);
+      overflow-y: auto;
+    }
+
+    .brand-header {
+      padding: var(--space-lg);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+    .logo span { font-weight: 400; opacity: 0.6; }
+
+    /* Navigation */
+    .nav-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-on-brand);
+    }
+    .nav-tab {
+      flex: 1;
+      padding: var(--space-sm);
+      text-align: center;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--c-ink);
+      opacity: 0.5;
+      border-bottom: 2px solid transparent;
+      font-family: var(--font-sans);
+    }
+    .nav-tab.active {
+      opacity: 1;
+      border-bottom-color: var(--c-ink);
+    }
+    .nav-tab:hover { opacity: 0.8; }
+
+    /* Left panel content area */
+    .panel-brand-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .stat-cell {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      border-right: 1px solid var(--border-on-brand);
+    }
+    .stat-cell:nth-child(2n) { border-right: none; }
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.5;
+      font-family: var(--font-serif);
+      font-style: italic;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.2;
+    }
+    .stat-value.small { font-size: 18px; }
+
+    /* Tool activity indicators */
+    .tool-activity {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+    }
+    .tool-activity-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.5;
+      margin-bottom: var(--space-xs);
+    }
+    .tool-bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .tool-bar-label {
+      width: 80px;
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tool-bar-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(0,0,0,0.06);
+      margin: 0 8px;
+    }
+    .tool-bar-fill {
+      height: 100%;
+      background: var(--c-ink);
+      opacity: 0.3;
+      transition: width 0.3s;
+    }
+    .tool-bar-count {
+      width: 40px;
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.6;
+    }
+
+    /* Agent status area */
+    .agent-status {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      font-size: 12px;
+      display: none;
+    }
+    .agent-status.active { display: block; }
+    .agent-status .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 4px;
+    }
+    .agent-tool-call {
+      padding: 4px 0;
+      opacity: 0.7;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    /* Search panel */
+    .search-panel {
+      padding: var(--space-md);
+    }
+    .search-input-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: var(--space-sm);
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.3);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--c-ink); background: rgba(255,255,255,0.5); }
+    .search-btn {
+      padding: 10px 20px;
+      background: var(--c-ink);
+      color: var(--c-brand);
+      border: none;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    .search-btn:hover { opacity: 0.9; }
+    .search-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: var(--space-sm);
+    }
+    .filter-tag {
+      padding: 3px 10px;
+      font-size: 11px;
+      border: 1px solid rgba(0,0,0,0.15);
+      cursor: pointer;
+      background: transparent;
+      font-family: var(--font-sans);
+    }
+    .filter-tag.active { background: var(--c-ink); color: var(--c-brand); }
+
+    /* Session meta panel */
+    .session-meta-grid {
+      padding: var(--space-md);
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-on-brand);
+      font-size: 13px;
+    }
+    .meta-row .key { opacity: 0.5; }
+
+    /* Insights nav */
+    .insights-nav {
+      padding: var(--space-sm) 0;
+    }
+    .insights-nav-item {
+      display: block;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-on-brand);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .insights-nav-item:hover { background: rgba(0,0,0,0.03); }
+    .insights-nav-item span {
+      display: block;
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+
+    /* Brand footer */
+    .brand-footer {
+      padding: var(--space-sm) var(--space-md);
+      border-top: 1px solid var(--border-on-brand);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* --- Right Panel (Content) --- */
+    .panel-content {
+      width: 60%;
+      background: var(--c-white);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-header {
+      padding: var(--space-lg) var(--space-lg) var(--space-md);
+      border-bottom: 1px solid var(--border-on-white);
+    }
+    .content-header .meta-label {
+      font-size: 12px;
+      color: var(--c-meta);
+      margin-bottom: var(--space-sm);
+      display: block;
+      font-family: var(--font-serif);
+      font-style: italic;
+    }
+    .content-header h1 {
+      font-weight: 400;
+      font-size: 28px;
+      letter-spacing: -0.5px;
+    }
+
+    .content-body {
+      flex: 1;
+      padding: var(--space-md) var(--space-lg);
+      overflow-y: auto;
+    }
+
+    /* Activity chart (CSS bars) */
+    .activity-chart {
+      margin-bottom: var(--space-lg);
+    }
+    .chart-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+      margin-bottom: var(--space-sm);
+    }
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 120px;
+      border-bottom: 1px solid var(--border-on-white);
+      padding-bottom: 4px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: var(--c-brand);
+      min-width: 4px;
+      cursor: pointer;
+      position: relative;
+      will-change: transform, opacity;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-bar.dimmed { opacity: 0.25; }
+    .chart-bar.selected {
+      opacity: 1;
+      transform: scaleX(1.4);
+      z-index: 2;
+      background: var(--c-ink);
+      animation: bar-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes bar-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .chart-bar:hover::after, .chart-bar.selected::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--c-ink);
+      color: var(--c-white);
+      padding: 2px 6px;
+      font-size: 10px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .chart-dates {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--c-meta);
+      margin-top: 4px;
+    }
+
+    /* Date filter indicator */
+    .date-filter-bar {
+      display: none;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-xs) 0;
+      margin-bottom: var(--space-sm);
+      font-size: 13px;
+    }
+    .date-filter-bar.visible { display: flex; }
+    .date-filter-label {
+      font-weight: 500;
+    }
+    .date-filter-clear {
+      font-size: 11px;
+      color: var(--c-meta);
+      cursor: pointer;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      padding: 2px 8px;
+      font-family: var(--font-sans);
+    }
+    .date-filter-clear:hover { background: var(--c-bg-alt); }
+
+    /* Session list */
+    .session-list {
+      margin-bottom: var(--space-lg);
+      contain: layout style;
+    }
+    .session-row {
+      display: flex;
+      align-items: baseline;
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-on-white);
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--c-ink);
+    }
+    .session-row:has(.match-preview) {
+      align-items: flex-start;
+    }
+    .session-row:hover { background: var(--c-bg-alt); }
+    .session-time {
+      width: 130px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--c-meta);
+    }
+    .session-summary {
+      flex: 1;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .session-summary:has(.match-preview) {
+      white-space: normal;
+    }
+    .session-project {
+      font-size: 11px;
+      color: var(--c-meta);
+      margin-left: var(--space-sm);
+      flex-shrink: 0;
+    }
+    .session-tokens {
+      width: 80px;
+      text-align: right;
+      font-size: 11px;
+      color: var(--c-meta);
+      flex-shrink: 0;
+    }
+
+    /* Collapsed group */
+    .session-group-row {
+      display: flex;
+      align-items: baseline;
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-on-white);
+      cursor: pointer;
+      color: var(--c-ink);
+    }
+    .session-group-row:hover { background: var(--c-bg-alt); }
+    .group-badge {
+      display: inline-block;
+      background: var(--c-ink);
+      color: var(--c-white);
+      font-size: 10px;
+      padding: 1px 6px;
+      margin-right: 6px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      vertical-align: 1px;
+    }
+    .group-expanded {
+      border-left: 2px solid var(--border-on-white);
+      margin-left: 130px;
+      padding-left: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+    .group-expanded .session-row {
+      padding: 4px 0;
+    }
+    .group-expanded .session-time { width: auto; margin-right: var(--space-sm); }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-md) 0;
+    }
+    .pagination button {
+      padding: 6px 16px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 12px;
+    }
+    .pagination button:hover { background: var(--c-bg-alt); }
+    .pagination button:disabled { opacity: 0.3; cursor: default; }
+
+    /* Agent response area */
+    .agent-response {
+      padding: var(--space-lg) var(--space-md);
+      background: var(--c-bg-alt);
+      border: 1px solid var(--border-on-white);
+      margin-bottom: var(--space-md);
+      font-size: 14px;
+      line-height: 1.7;
+      font-family: var(--font-serif);
+      display: none;
+    }
+    .agent-response.visible { display: block; }
+    .agent-response h1 { font-size: 22px; margin: var(--space-lg) 0 var(--space-sm); font-family: var(--font-sans); }
+    .agent-response h2 { font-size: 17px; margin: var(--space-lg) 0 var(--space-sm); font-family: var(--font-sans); border-bottom: 1px solid var(--border-on-white); padding-bottom: 6px; }
+    .agent-response h3 { font-size: 14px; margin: var(--space-md) 0 var(--space-xs); font-family: var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-meta); }
+    .agent-response p { margin: 0 0 var(--space-sm); }
+    .agent-response code {
+      background: rgba(0,0,0,0.06);
+      padding: 1px 4px;
+      font-size: 13px;
+    }
+    .agent-response pre {
+      background: var(--c-ink);
+      color: var(--c-white);
+      padding: var(--space-sm);
+      overflow-x: auto;
+      margin: var(--space-sm) 0;
+      font-size: 12px;
+    }
+    .agent-response ul, .agent-response ol {
+      margin: 0 0 var(--space-sm);
+      padding-left: 1.5em;
+    }
+    .agent-response li { margin-bottom: 4px; }
+
+    /* Tables */
+    .agent-response table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-sm) 0 var(--space-md);
+      font-size: 13px;
+      font-family: var(--font-sans);
+    }
+    .agent-response th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--c-meta);
+      padding: 8px 12px;
+      border-bottom: 2px solid var(--c-ink);
+    }
+    .agent-response td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-on-white);
+      vertical-align: top;
+    }
+    .agent-response tr:last-child td { border-bottom: none; }
+    .agent-response tr:hover td { background: rgba(0,0,0,0.02); }
+
+    /* Actionable suggestion cards in session detail */
+    .suggestion-card {
+      background: var(--c-white);
+      border: 1px solid var(--border-on-white);
+      border-left: 3px solid var(--c-brand);
+      padding: var(--space-sm) var(--space-md);
+      margin: var(--space-sm) 0;
+      cursor: pointer;
+      transition: background 200ms, box-shadow 200ms;
+    }
+    .suggestion-card:hover {
+      background: #fafafa;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .suggestion-card .suggestion-title {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .suggestion-card .suggestion-desc {
+      font-size: 12px;
+      color: var(--c-meta);
+      line-height: 1.5;
+    }
+    .suggestion-card .suggestion-prompt {
+      font-size: 12px;
+      font-family: monospace;
+      background: rgba(0,0,0,0.04);
+      padding: 6px 10px;
+      margin-top: 8px;
+      border-radius: 3px;
+      cursor: copy;
+      position: relative;
+    }
+    .suggestion-card .suggestion-prompt::after {
+      content: 'Click to copy';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: var(--c-meta);
+      font-family: var(--font-sans);
+    }
+    .suggestion-card .suggestion-prompt.copied::after {
+      content: 'Copied!';
+      color: var(--c-brand);
+    }
+
+    /* Copyable prompts in agent responses */
+    .agent-response .copyable-prompt {
+      background: rgba(0,0,0,0.04);
+      padding: 4px 8px;
+      border-radius: 3px;
+      border: 1px dashed rgba(0,0,0,0.1);
+      transition: background 200ms, border-color 200ms;
+      display: inline-block;
+      margin: 2px 0;
+    }
+    .agent-response .copyable-prompt:hover {
+      background: rgba(0,0,0,0.08);
+      border-color: var(--c-brand);
+    }
+
+    /* Session download/view links */
+    .session-actions {
+      display: flex;
+      gap: 12px;
+      margin: var(--space-md) 0;
+      padding: var(--space-sm) 0;
+      border-top: 1px solid var(--border-on-white);
+    }
+    .session-action-link {
+      font-size: 12px;
+      font-family: var(--font-sans);
+      color: var(--c-brand);
+      text-decoration: none;
+      cursor: pointer;
+      padding: 4px 0;
+      border: none;
+      background: none;
+      transition: opacity 200ms;
+    }
+    .session-action-link:hover { opacity: 0.7; }
+
+    /* Session detail view */
+    .session-detail { display: none; }
+    .session-detail.visible { display: block; }
+    .detail-section {
+      margin-bottom: var(--space-lg);
+    }
+    .section-header {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+      margin-bottom: var(--space-sm);
+    }
+
+    .message-timeline {
+      border-left: 2px solid var(--border-on-white);
+      padding-left: var(--space-md);
+    }
+    .timeline-entry {
+      margin-bottom: var(--space-md);
+      position: relative;
+    }
+    .timeline-entry::before {
+      content: '';
+      position: absolute;
+      left: calc(-1 * var(--space-md) - 5px);
+      top: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border-on-white);
+    }
+    .timeline-entry.user::before { background: var(--c-brand); }
+    .timeline-entry.assistant::before { background: var(--c-ink); }
+    .timeline-role {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-meta);
+      margin-bottom: 2px;
+    }
+    .timeline-content {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .timeline-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .tool-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      background: var(--c-bg-alt);
+      border: 1px solid var(--border-on-white);
+    }
+
+    /* Insights view */
+    .insights-content {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .insights-content h2, .insights-content h3 {
+      font-family: var(--font-sans);
+      font-weight: 500;
+      margin: var(--space-md) 0 var(--space-sm);
+    }
+
+    /* Action cards */
+    .action-cards {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .action-card {
+      border: 1px solid var(--border-on-white);
+      padding: var(--space-sm) var(--space-md);
+    }
+    .action-card-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-xs);
+    }
+    .action-category {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      font-weight: 600;
+    }
+    .action-category.hook { background: #E8F5E9; color: #2E7D32; }
+    .action-category.claude-md { background: #E3F2FD; color: #1565C0; }
+    .action-category.automation { background: #FFF3E0; color: #E65100; }
+    .action-category.workflow { background: #F3E5F5; color: #7B1FA2; }
+    .action-effort {
+      font-size: 10px;
+      color: var(--c-meta);
+      margin-left: auto;
+    }
+    .action-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .action-observation {
+      font-size: 12px;
+      color: var(--c-ink-light);
+      margin-bottom: var(--space-xs);
+      font-style: italic;
+      font-family: var(--font-serif);
+    }
+    .action-description {
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: var(--space-sm);
+    }
+    .action-artifact {
+      background: var(--c-ink);
+      color: #ddd;
+      padding: var(--space-sm);
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-x: auto;
+      white-space: pre;
+      margin-bottom: var(--space-xs);
+      position: relative;
+    }
+    .action-artifact-path {
+      font-size: 11px;
+      color: var(--c-meta);
+      margin-bottom: 4px;
+      font-family: monospace;
+    }
+    .action-buttons {
+      display: flex;
+      gap: var(--space-xs);
+      margin-top: var(--space-xs);
+    }
+    .action-btn {
+      padding: 4px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    .action-btn:hover { background: var(--c-bg-alt); }
+    .action-btn.primary {
+      background: var(--c-ink);
+      color: var(--c-white);
+      border-color: var(--c-ink);
+    }
+    .action-btn.primary:hover { opacity: 0.9; }
+    .action-btn:disabled { opacity: 0.4; cursor: default; }
+    .action-applied {
+      font-size: 11px;
+      color: #2E7D32;
+      padding: 4px 0;
+    }
+
+    /* Generate actions button */
+    .generate-actions-btn {
+      display: block;
+      width: 100%;
+      padding: var(--space-sm);
+      background: var(--c-ink);
+      color: var(--c-white);
+      border: none;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      margin-bottom: var(--space-md);
+    }
+    .generate-actions-btn:hover { opacity: 0.9; }
+    .generate-actions-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Time group headers */
+    .time-group-header {
+      font-size: 13px;
+      font-weight: 600;
+      padding: var(--space-sm) 0 var(--space-xs);
+      margin-top: var(--space-sm);
+      border-bottom: 2px solid var(--c-ink);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .time-group-header:first-child { margin-top: 0; }
+    .time-group-header .count {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--c-meta);
+    }
+
+    /* Granularity toggle */
+    .granularity-toggle {
+      display: flex;
+      gap: 2px;
+      margin-left: auto;
+    }
+    .granularity-btn {
+      padding: 3px 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--c-meta);
+    }
+    .granularity-btn.active {
+      background: var(--c-ink);
+      color: var(--c-white);
+      border-color: var(--c-ink);
+    }
+
+    /* Inline find session */
+    .find-session-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-sm);
+    }
+    .find-session-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border-on-white);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+      background: var(--c-bg-alt);
+    }
+    .find-session-input:focus { border-color: var(--c-ink); background: var(--c-white); }
+    .find-session-input::placeholder { color: var(--c-meta); }
+
+    /* Transcript viewer */
+    .transcript {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .transcript-msg {
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-on-white);
+    }
+    .transcript-msg:last-child { border-bottom: none; }
+    .transcript-role {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .transcript-role.user { color: var(--c-brand); }
+    .transcript-role.assistant { color: var(--c-ink); }
+    .transcript-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .transcript-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .transcript-tool {
+      font-size: 10px;
+      padding: 1px 6px;
+      background: var(--c-bg-alt);
+      border: 1px solid var(--border-on-white);
+    }
+    .transcript-tool.error { border-color: var(--c-brand); color: var(--c-brand); }
+    .transcript-time {
+      font-size: 10px;
+      color: var(--c-meta);
+      float: right;
+    }
+
+    /* Session action links */
+    .session-actions {
+      display: flex;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-sm);
+    }
+    .session-action-link {
+      padding: 4px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    .session-action-link:hover { background: var(--c-bg-alt); }
+    .session-action-link.active {
+      background: var(--c-ink);
+      color: var(--c-white);
+      border-color: var(--c-ink);
+    }
+
+    /* Smart filter chips */
+    .smart-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: var(--space-sm);
+    }
+    .smart-filter {
+      padding: 3px 10px;
+      font-size: 11px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--c-ink-light);
+      white-space: nowrap;
+    }
+    .smart-filter:hover { background: var(--c-bg-alt); }
+    .smart-filter.active {
+      background: var(--c-ink);
+      color: var(--c-white);
+      border-color: var(--c-ink);
+    }
+    .smart-filter .filter-count {
+      font-size: 9px;
+      opacity: 0.6;
+      margin-left: 3px;
+    }
+
+    /* Search match preview */
+    .match-preview {
+      display: block;
+      font-size: 11px;
+      color: var(--c-meta);
+      line-height: 1.4;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .match-preview mark {
+      background: rgba(255, 77, 59, 0.2);
+      color: var(--c-ink);
+      padding: 0 1px;
+      font-weight: 500;
+    }
+    .match-source {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.5;
+      margin-right: 4px;
+    }
+
+    /* Loading spinner */
+    .loading {
+      display: none;
+      padding: var(--space-md);
+      color: var(--c-meta);
+      font-style: italic;
+    }
+    .loading.visible { display: block; }
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--c-meta);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Hide/show views */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Back button */
+    .back-btn {
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 12px;
+      border: 1px solid var(--border-on-white);
+      background: transparent;
+      cursor: pointer;
+      margin-bottom: var(--space-md);
+      font-family: var(--font-sans);
+    }
+    .back-btn:hover { background: var(--c-bg-alt); }
+
+    /* Cost display */
+    .cost-display {
+      font-size: 11px;
+      color: var(--c-meta);
+      margin-top: var(--space-xs);
+      padding-top: var(--space-xs);
+      border-top: 1px solid var(--border-on-white);
+    }
+
+    /* ========================================
+       ANIMATIONS & MICRO-INTERACTIONS
+       ======================================== */
+
+    /* --- Hero: Chart bars grow upward on load --- */
+    .chart-bar {
+      transform-origin: bottom;
+      animation: barGrow 600ms var(--ease-out-quart) backwards;
+    }
+    @keyframes barGrow {
+      from { transform: scaleY(0); opacity: 0; }
+      to { transform: scaleY(1); opacity: 1; }
+    }
+    /* Stagger bars via inline style --i set in JS */
+    .chart-bar { animation-delay: calc(var(--i, 0) * 12ms); }
+
+    /* --- Stat cells: staggered fade-in --- */
+    .stat-cell {
+      animation: fadeSlideUp 500ms var(--ease-out-quart) backwards;
+    }
+    .stat-cell:nth-child(1) { animation-delay: 80ms; }
+    .stat-cell:nth-child(2) { animation-delay: 140ms; }
+    .stat-cell:nth-child(3) { animation-delay: 200ms; }
+    .stat-cell:nth-child(4) { animation-delay: 260ms; }
+    .stat-cell:nth-child(5) { animation-delay: 320ms; }
+    .stat-cell:nth-child(6) { animation-delay: 380ms; }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Session rows: hover feedback --- */
+    .session-row {
+      transition: background-color 150ms, transform 150ms var(--ease-out-quart);
+    }
+    .session-row:hover {
+      transform: translateX(4px);
+    }
+
+    /* --- Group rows: expand/collapse hint --- */
+    .session-group-row {
+      transition: background-color 150ms;
+    }
+    .group-badge {
+      transition: transform 200ms var(--ease-out-quart);
+    }
+    .session-group-row:hover .group-badge {
+      transform: scale(1.15);
+    }
+
+    /* --- Group expanded: slide in --- */
+    .group-expanded {
+      animation: expandIn 300ms var(--ease-out-quart);
+    }
+    @keyframes expandIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Time group headers: fade in --- */
+    .time-group-header {
+      animation: fadeSlideUp 400ms var(--ease-out-quart) backwards;
+    }
+
+    /* --- Nav tabs: underline transition --- */
+    .nav-tab {
+      transition: opacity 200ms, border-bottom-color 250ms var(--ease-out-quart);
+    }
+
+    /* --- Smart filter chips: interaction --- */
+    .smart-filter {
+      transition: background-color 200ms, color 200ms, border-color 200ms, transform 150ms var(--ease-out-quart);
+    }
+    .smart-filter:active {
+      transform: scale(0.95);
+    }
+
+    /* --- Granularity toggle: transition --- */
+    .granularity-btn {
+      transition: background-color 200ms, color 200ms, border-color 200ms;
+    }
+
+    /* --- Find input: focus glow --- */
+    .find-session-input {
+      transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
+    }
+    .find-session-input:focus {
+      box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+    }
+
+    /* --- Search input (left panel): focus --- */
+    .search-input {
+      transition: border-color 200ms, background-color 200ms;
+    }
+
+    /* --- Action cards: staggered entrance --- */
+    .action-card {
+      animation: fadeSlideUp 400ms var(--ease-out-quart) backwards;
+    }
+    .action-card:nth-child(1) { animation-delay: 50ms; }
+    .action-card:nth-child(2) { animation-delay: 120ms; }
+    .action-card:nth-child(3) { animation-delay: 190ms; }
+    .action-card:nth-child(4) { animation-delay: 260ms; }
+    .action-card:nth-child(5) { animation-delay: 330ms; }
+    .action-card:nth-child(6) { animation-delay: 400ms; }
+    .action-card:nth-child(7) { animation-delay: 470ms; }
+    .action-card:nth-child(8) { animation-delay: 540ms; }
+
+    /* --- Action buttons: feedback --- */
+    .action-btn {
+      transition: background-color 150ms, color 150ms, border-color 150ms, transform 100ms var(--ease-out-quart), opacity 150ms;
+    }
+    .action-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* --- Applied confirmation: slide in --- */
+    .action-applied {
+      animation: appliedPulse 400ms var(--ease-out-quart);
+    }
+    @keyframes appliedPulse {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* --- Generate actions button --- */
+    .generate-actions-btn {
+      transition: opacity 200ms, transform 100ms var(--ease-out-quart);
+    }
+    .generate-actions-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    /* --- Loading spinner: smoother --- */
+    .loading {
+      animation: fadeIn 300ms var(--ease-out-quart);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* --- Back button --- */
+    .back-btn {
+      transition: background-color 150ms, transform 150ms var(--ease-out-quart);
+    }
+    .back-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* --- Session action links --- */
+    .session-action-link {
+      transition: background-color 150ms, color 150ms, border-color 150ms;
+    }
+
+    /* --- Tool bar fill: animate width --- */
+    .tool-bar-fill {
+      transition: width 500ms var(--ease-out-quart);
+    }
+
+    /* --- Chart bar: hover/selected uses animation not transition to avoid conflict with barGrow --- */
+
+    /* --- Transcript messages: stagger (capped at 600ms total) --- */
+    .transcript-msg {
+      animation: fadeSlideUp 300ms var(--ease-out-quart) backwards;
+      animation-delay: calc(min(var(--msg-i, 0), 20) * 30ms);
+    }
+
+    /* --- View switching: fade content --- */
+    .view {
+      animation: fadeIn 250ms var(--ease-out-quart);
+    }
+
+    /* --- Date filter bar: slide in --- */
+    .date-filter-bar.visible {
+      animation: fadeSlideUp 300ms var(--ease-out-quart);
+    }
+
+    /* --- Pagination buttons --- */
+    .pagination button {
+      transition: background-color 150ms, opacity 150ms;
+    }
+
+    /* ========================================
+       REDUCED MOTION
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Left Panel -->
+    <aside class="panel-brand">
+      <header class="brand-header">
+        <div class="logo">Session <span>Explorer</span></div>
+        <div style="font-size: 11px; opacity: 0.6;" id="session-count">-- sessions</div>
+      </header>
+
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-view="overview">Sessions</button>
+        <button class="nav-tab" data-view="search">Semantic</button>
+        <button class="nav-tab" data-view="session">Detail</button>
+        <button class="nav-tab" data-view="insights">Insights</button>
+      </nav>
+
+      <div class="panel-brand-content">
+        <!-- Overview left: stats grid -->
+        <div class="view active" id="left-overview">
+          <div class="stats-grid" id="stats-grid">
+            <div class="stat-cell">
+              <div class="stat-label">Sessions</div>
+              <div class="stat-value" id="stat-sessions">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Total Tokens</div>
+              <div class="stat-value small" id="stat-tokens">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Hours</div>
+              <div class="stat-value" id="stat-hours">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Avg Duration</div>
+              <div class="stat-value small" id="stat-avg-duration">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Lines Added</div>
+              <div class="stat-value small" id="stat-lines-added">--</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-label">Lines Removed</div>
+              <div class="stat-value small" id="stat-lines-removed">--</div>
+            </div>
+          </div>
+          <div class="tool-activity" id="tool-bars">
+            <div class="tool-activity-header">Tool Distribution</div>
+          </div>
+        </div>
+
+        <!-- Search left: input + filters -->
+        <div class="view" id="left-search">
+          <div class="search-panel">
+            <div class="search-input-wrap">
+              <input class="search-input" id="search-input" placeholder="Search sessions..." />
+              <button class="search-btn" id="search-btn">Go</button>
+            </div>
+            <div class="filter-tags" id="search-filters">
+              <button class="filter-tag" data-mode="semantic">Semantic</button>
+              <button class="filter-tag active" data-mode="text">Text</button>
+            </div>
+          </div>
+          <div class="agent-status" id="agent-status">
+            <div class="label">Agent Activity</div>
+            <div id="agent-tool-calls"></div>
+          </div>
+        </div>
+
+        <!-- Session left: metadata -->
+        <div class="view" id="left-session">
+          <div class="session-meta-grid" id="session-meta-panel">
+            <div style="padding: var(--space-md); opacity: 0.5; font-style: italic;">Select a session to view details</div>
+          </div>
+        </div>
+
+        <!-- Insights left: nav + ask input -->
+        <div class="view" id="left-insights">
+          <div class="insights-nav" id="insights-nav">
+            <div class="insights-nav-item" data-action="load-report">
+              Latest Report
+              <span>View the most recent insights analysis</span>
+            </div>
+          </div>
+          <div class="search-panel">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.5; margin-bottom: var(--space-xs);">Ask about your usage</div>
+            <div class="search-input-wrap">
+              <input class="search-input" id="insights-input" placeholder="e.g. Which sessions used the most tokens?" />
+              <button class="search-btn" id="insights-ask-btn">Ask</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="brand-footer">
+        <span>Claude Code</span>
+        <span id="footer-date"></span>
+      </footer>
+    </aside>
+
+    <!-- Right Panel -->
+    <main class="panel-content">
+      <!-- Overview right: find + chart + grouped sessions -->
+      <div class="view active" id="right-overview">
+        <div class="content-header" style="padding-bottom: var(--space-sm);">
+          <div class="find-session-bar">
+            <h1 style="font-weight: 400; font-size: 28px; letter-spacing: -0.5px; margin-right: var(--space-sm); white-space: nowrap;">Find Session</h1>
+            <input class="find-session-input" id="find-input" placeholder="Search by keyword, project, or topic..." />
+          </div>
+          <div class="smart-filters" id="smart-filters"></div>
+        </div>
+        <div class="content-body">
+          <div class="activity-chart">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs);">
+              <div class="chart-title" style="margin-bottom: 0;">Activity</div>
+              <div class="granularity-toggle" id="granularity-toggle">
+                <button class="granularity-btn" data-granularity="day">Day</button>
+                <button class="granularity-btn active" data-granularity="week">Week</button>
+                <button class="granularity-btn" data-granularity="month">Month</button>
+              </div>
+            </div>
+            <div class="chart-bars" id="daily-chart"></div>
+            <div class="chart-dates" id="chart-dates"></div>
+          </div>
+          <div class="date-filter-bar" id="date-filter-bar">
+            <span class="date-filter-label" id="date-filter-label"></span>
+            <button class="date-filter-clear" id="date-filter-clear">Clear filter</button>
+          </div>
+          <div class="session-list" id="recent-sessions"></div>
+          <div class="pagination" id="pagination">
+            <button id="prev-page" disabled>&larr; Prev</button>
+            <span id="page-info">1 / 1</span>
+            <button id="next-page">&rarr; Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search right: results -->
+      <div class="view" id="right-search">
+        <div class="content-header">
+          <span class="meta-label">Search</span>
+          <h1>Session Search</h1>
+        </div>
+        <div class="content-body">
+          <div class="loading" id="search-loading">Searching</div>
+          <div class="agent-response" id="search-response"></div>
+          <div class="session-list" id="search-results"></div>
+        </div>
+      </div>
+
+      <!-- Session right: detail -->
+      <div class="view" id="right-session">
+        <div class="content-header">
+          <span class="meta-label">Session Detail</span>
+          <h1 id="session-title">Select a Session</h1>
+        </div>
+        <div class="content-body">
+          <button class="back-btn" id="back-to-list">&larr; Back to list</button>
+          <div class="session-detail" id="session-detail"></div>
+        </div>
+      </div>
+
+      <!-- Insights right: actions + report -->
+      <div class="view" id="right-insights">
+        <div class="content-header">
+          <span class="meta-label">Insights</span>
+          <h1>Actionable Insights</h1>
+        </div>
+        <div class="content-body">
+          <button class="generate-actions-btn" id="generate-actions-btn">Generate Actions</button>
+          <div class="loading" id="insights-loading">Analyzing sessions</div>
+          <div class="action-cards" id="action-cards"></div>
+          <div class="agent-response" id="insights-response"></div>
+          <div class="insights-content" id="insights-content"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // --- State ---
+    const state = {
+      currentView: 'overview',
+      sessions: [],
+      allSessions: [], // unfiltered
+      stats: null,
+      page: 1,
+      totalPages: 1,
+      searchMode: 'text',
+      currentSessionId: null,
+      dateFilter: null,
+      expandedGroups: new Set(),
+      granularity: 'week', // 'day' | 'week' | 'month'
+      findQuery: '',
+      activeFilter: null, // smart filter key
+      smartFilters: [], // [{label, key, count}]
+    };
+
+    // --- Navigation ---
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        switchView(tab.dataset.view);
+      });
+    });
+
+    function switchView(view) {
+      state.currentView = view;
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+      ['overview', 'search', 'session', 'insights'].forEach(v => {
+        document.getElementById(`left-${v}`).classList.toggle('active', v === view);
+        document.getElementById(`right-${v}`).classList.toggle('active', v === view);
+      });
+    }
+
+    // --- Format helpers ---
+    function formatTokens(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return String(n);
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '--';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+             d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    function shortProject(path) {
+      if (!path) return '';
+      const parts = path.split('/').filter(Boolean);
+      return parts.slice(-2).join('/');
+    }
+
+    function escapeHtml(s) {
+      if (typeof s !== 'string') return String(s);
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // --- Load Stats ---
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        state.stats = data;
+
+        document.getElementById('stat-sessions').textContent = data.total_sessions;
+        document.getElementById('stat-tokens').textContent = formatTokens(data.total_tokens);
+        document.getElementById('stat-hours').textContent = data.total_duration_hours;
+        document.getElementById('stat-avg-duration').textContent = data.avg_duration_min + 'm';
+        document.getElementById('stat-lines-added').textContent = '+' + formatTokens(data.total_lines.added);
+        document.getElementById('stat-lines-removed').textContent = '-' + formatTokens(data.total_lines.removed);
+        document.getElementById('session-count').textContent = data.total_sessions + ' sessions';
+
+        // Tool bars
+        renderToolBars(data.top_tools);
+        // Activity chart (responds to granularity)
+        state.dailyData = data.daily_activity;
+        renderChart();
+      } catch (e) {
+        console.error('Failed to load stats:', e);
+      }
+    }
+
+    function renderToolBars(tools) {
+      const container = document.getElementById('tool-bars');
+      const max = tools.length > 0 ? tools[0][1] : 1;
+      let html = '<div class="tool-activity-header">Tool Distribution</div>';
+      for (const [name, count] of tools) {
+        const pct = (count / max * 100).toFixed(1);
+        html += `<div class="tool-bar-row">
+          <span class="tool-bar-label">${escapeHtml(name)}</span>
+          <span class="tool-bar-track"><span class="tool-bar-fill" style="width:${pct}%"></span></span>
+          <span class="tool-bar-count">${formatTokens(count)}</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function renderChart() {
+      const container = document.getElementById('daily-chart');
+      const datesContainer = document.getElementById('chart-dates');
+      const dailyData = state.dailyData;
+      if (!dailyData || dailyData.length === 0) return;
+
+      let bars = []; // [{key, count, label}]
+
+      if (state.granularity === 'month') {
+        // Aggregate daily data into weekly buckets
+        const weekMap = new Map();
+        for (const [date, count] of dailyData) {
+          const d = new Date(date + 'T12:00:00');
+          const day = d.getDay();
+          const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+          const monday = new Date(d);
+          monday.setDate(diff);
+          const weekKey = monday.toISOString().slice(0, 10);
+          weekMap.set(weekKey, (weekMap.get(weekKey) || 0) + count);
+        }
+        const sorted = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        const recent = sorted.slice(-26); // ~6 months of weeks
+        for (const [weekKey, count] of recent) {
+          const d = new Date(weekKey + 'T12:00:00');
+          const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          bars.push({ key: weekKey, count, label: `Week of ${label}: ${count}` });
+        }
+      } else if (state.granularity === 'day') {
+        // Show hourly distribution for selected date (or today)
+        const targetDate = state.dateFilter || new Date().toISOString().slice(0, 10);
+        const hourCounts = new Array(24).fill(0);
+        // Count from loaded sessions
+        for (const s of state.allSessions) {
+          if (s.start_time && s.start_time.slice(0, 10) === targetDate) {
+            const hour = new Date(s.start_time).getHours();
+            hourCounts[hour]++;
+          }
+        }
+        for (let h = 0; h < 24; h++) {
+          const hStr = String(h).padStart(2, '0');
+          bars.push({ key: `${targetDate}T${hStr}`, count: hourCounts[h], label: `${hStr}:00 -- ${hourCounts[h]} sessions` });
+        }
+      } else {
+        // Week: daily bars (last 60 days)
+        const recent = dailyData.slice(-60);
+        for (const [date, count] of recent) {
+          bars.push({ key: date, count, label: `${date}: ${count} sessions` });
+        }
+      }
+
+      const max = Math.max(...bars.map(b => b.count), 1);
+      let barsHtml = '';
+      for (let i = 0; i < bars.length; i++) {
+        const b = bars[i];
+        const h = (b.count / max * 100);
+        const sel = state.dateFilter === b.key ? 'selected' : '';
+        const dim = state.dateFilter && state.dateFilter !== b.key ? 'dimmed' : '';
+        barsHtml += `<div class="chart-bar ${sel} ${dim}" style="height:${h}%;--i:${i}" data-date="${b.key}" data-tooltip="${b.label}"></div>`;
+      }
+      container.innerHTML = barsHtml;
+
+      // Date labels
+      if (bars.length > 0) {
+        if (state.granularity === 'day') {
+          const targetDate = state.dateFilter || new Date().toISOString().slice(0, 10);
+          const d = new Date(targetDate + 'T12:00:00');
+          datesContainer.innerHTML = `<span>00:00</span><span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span><span>23:00</span>`;
+        } else {
+          const first = bars[0].key.slice(5);
+          const last = bars[bars.length - 1].key.slice(5);
+          datesContainer.innerHTML = `<span>${first}</span><span>${last}</span>`;
+        }
+      }
+    }
+
+    // Event delegation for chart bar clicks
+    document.getElementById('daily-chart').addEventListener('click', (e) => {
+      const bar = e.target.closest('.chart-bar');
+      if (!bar) return;
+      const date = bar.dataset.date;
+      if (state.granularity === 'day') return; // hourly bars aren't filterable
+      if (state.dateFilter === date) {
+        clearDateFilter();
+      } else {
+        setDateFilter(date);
+      }
+    });
+
+    function setDateFilter(date) {
+      state.dateFilter = date;
+      state.page = 1;
+      state.expandedGroups.clear();
+      // Show filter bar
+      const filterBar = document.getElementById('date-filter-bar');
+      const filterLabel = document.getElementById('date-filter-label');
+      filterBar.classList.add('visible');
+      const d = new Date(date + 'T12:00:00');
+      filterLabel.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      // Re-render chart with selection state
+      renderChart();
+      // Reload with date filter
+      loadSessions(1, date);
+    }
+
+    function clearDateFilter() {
+      state.dateFilter = null;
+      state.expandedGroups.clear();
+      document.getElementById('date-filter-bar').classList.remove('visible');
+      renderChart();
+      loadSessions(1);
+    }
+
+    document.getElementById('date-filter-clear').addEventListener('click', clearDateFilter);
+
+    // --- Load Sessions ---
+    async function loadSessions(page = 1, dateFilter = null) {
+      try {
+        let url = `/api/sessions?page=${page}&limit=200`;
+        if (dateFilter) url += `&date=${dateFilter}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        state.allSessions = data.sessions;
+        state.page = data.page;
+        state.totalPages = data.pages;
+
+        // Generate smart filters from loaded sessions
+        generateSmartFilters(data.sessions);
+
+        // Re-render chart (Day view uses session times for hourly bars)
+        if (state.dailyData) renderChart();
+
+        // Apply current find/filter then render
+        applyFiltersAndRender();
+
+        document.getElementById('page-info').textContent = `${data.page} / ${data.pages}`;
+        document.getElementById('prev-page').disabled = data.page <= 1;
+        document.getElementById('next-page').disabled = data.page >= data.pages;
+      } catch (e) {
+        console.error('Failed to load sessions:', e);
+      }
+    }
+
+    // --- Smart Filters ---
+    function generateSmartFilters(sessions) {
+      const projectCounts = {};
+      for (const s of sessions) {
+        const proj = shortProject(s.project);
+        if (proj) projectCounts[proj] = (projectCounts[proj] || 0) + 1;
+      }
+      // Sort by count, take top projects with > 1 session
+      const filters = Object.entries(projectCounts)
+        .filter(([, c]) => c > 1)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([proj, count]) => ({ label: proj.split('/').pop(), key: proj, count }));
+
+      state.smartFilters = filters;
+      renderSmartFilters();
+    }
+
+    function renderSmartFilters() {
+      const container = document.getElementById('smart-filters');
+      let html = '';
+      for (const f of state.smartFilters) {
+        const active = state.activeFilter === f.key ? 'active' : '';
+        html += `<button class="smart-filter ${active}" data-filter-key="${escapeHtml(f.key)}">${escapeHtml(f.label)}<span class="filter-count">${f.count}</span></button>`;
+      }
+      container.innerHTML = html;
+
+      container.querySelectorAll('.smart-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.filterKey;
+          state.activeFilter = state.activeFilter === key ? null : key;
+          state.expandedGroups.clear();
+          renderSmartFilters();
+          applyFiltersAndRender();
+        });
+      });
+    }
+
+    // --- Find + Filter ---
+    function applyFiltersAndRender() {
+      let filtered = state.allSessions;
+
+      // Text search
+      if (state.findQuery) {
+        const q = state.findQuery.toLowerCase();
+        filtered = filtered.filter(s =>
+          (s.summary || '').toLowerCase().includes(q) ||
+          (s.first_prompt || '').toLowerCase().includes(q) ||
+          (s.project || '').toLowerCase().includes(q) ||
+          s.session_id.includes(q)
+        );
+      }
+
+      // Smart filter (project)
+      if (state.activeFilter) {
+        filtered = filtered.filter(s => shortProject(s.project) === state.activeFilter);
+      }
+
+      state.sessions = filtered;
+      renderGroupedSessionList(filtered, 'recent-sessions');
+    }
+
+    // --- Find Input (debounced) ---
+    let _findTimer = 0;
+    document.getElementById('find-input').addEventListener('input', (e) => {
+      clearTimeout(_findTimer);
+      _findTimer = setTimeout(() => {
+        state.findQuery = e.target.value.trim();
+        state.expandedGroups.clear();
+        applyFiltersAndRender();
+      }, 150);
+    });
+
+    // --- Time Period Grouping ---
+    function getTimePeriodKey(iso, granularity) {
+      if (!iso) return 'unknown';
+      const d = new Date(iso);
+      if (granularity === 'day') {
+        return iso.slice(0, 10);
+      } else if (granularity === 'week') {
+        // ISO week: find Monday of this week
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        return monday.toISOString().slice(0, 10);
+      } else { // month
+        return iso.slice(0, 7);
+      }
+    }
+
+    function formatPeriodHeader(key, granularity, count) {
+      if (granularity === 'day') {
+        const d = new Date(key + 'T12:00:00');
+        const today = new Date().toISOString().slice(0, 10);
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        if (key === today) return 'Today';
+        if (key === yesterday) return 'Yesterday';
+        return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      } else if (granularity === 'week') {
+        const monday = new Date(key + 'T12:00:00');
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 6);
+        // Check if this is current week
+        const now = new Date();
+        const nowKey = getTimePeriodKey(now.toISOString(), 'week');
+        if (key === nowKey) return 'This Week';
+        const lastWeek = new Date(now);
+        lastWeek.setDate(lastWeek.getDate() - 7);
+        const lastWeekKey = getTimePeriodKey(lastWeek.toISOString(), 'week');
+        if (key === lastWeekKey) return 'Last Week';
+        return monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' -- ' +
+               sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else { // month
+        const d = new Date(key + '-15T12:00:00');
+        const nowMonth = new Date().toISOString().slice(0, 7);
+        if (key === nowMonth) return 'This Month';
+        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+    }
+
+    function groupByTimePeriod(sessions, granularity) {
+      const periods = [];
+      const periodMap = new Map();
+
+      for (const s of sessions) {
+        const key = getTimePeriodKey(s.start_time, granularity);
+        if (periodMap.has(key)) {
+          periodMap.get(key).sessions.push(s);
+        } else {
+          const period = { key, sessions: [s] };
+          periodMap.set(key, period);
+          periods.push(period);
+        }
+      }
+      return periods;
+    }
+
+    // --- Similarity grouping within time periods ---
+    const _simKeyCache = new Map();
+    function getSimilarityKey(s) {
+      const id = s.session_id;
+      if (_simKeyCache.has(id)) return _simKeyCache.get(id);
+      let sig = (s.summary || s.first_prompt || '').toLowerCase().trim();
+      sig = sig.replace(/\[?\{[^}]*\}]?/g, '').trim();
+      sig = sig.replace(/[0-9a-f]{8}-[0-9a-f]{4}/g, '').trim();
+      sig = sig.replace(/\d{4,}/g, '').trim();
+      sig = sig.replace(/\s+/g, ' ');
+      const project = shortProject(s.project);
+      const key = `${project}|${sig.slice(0, 50)}`;
+      _simKeyCache.set(id, key);
+      return key;
+    }
+
+    function collapseSimilarSessions(sessions) {
+      const result = [];
+      const groupMap = new Map();
+
+      for (const s of sessions) {
+        const key = getSimilarityKey(s);
+        if (groupMap.has(key)) {
+          groupMap.get(key).items.push(s);
+        } else {
+          const group = { key, items: [s] };
+          groupMap.set(key, group);
+          result.push(group);
+        }
+      }
+      return result;
+    }
+
+    // --- Match preview with highlighted keyword ---
+    function getMatchPreview(session, query) {
+      if (!query) return '';
+      const q = query.toLowerCase();
+      // Search fields in priority order with labels
+      const fields = [
+        { text: session.first_prompt, label: 'prompt' },
+        { text: session.summary, label: 'summary' },
+        { text: session.project, label: 'project' },
+      ];
+      for (const { text, label } of fields) {
+        if (!text) continue;
+        const idx = text.toLowerCase().indexOf(q);
+        if (idx === -1) continue;
+        // Extract snippet: ~40 chars before, match, ~60 chars after
+        const start = Math.max(0, idx - 40);
+        const end = Math.min(text.length, idx + query.length + 60);
+        let snippet = text.slice(start, end).replace(/\n/g, ' ');
+        if (start > 0) snippet = '...' + snippet;
+        if (end < text.length) snippet += '...';
+        // Highlight the match (escape first, then insert <mark>)
+        const escaped = escapeHtml(snippet);
+        const matchStart = escapeHtml(snippet.slice(0, idx - start + (start > 0 ? 3 : 0)));
+        // Simpler: use regex on escaped string
+        const re = new RegExp('(' + escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        const highlighted = escaped.replace(re, '<mark>$1</mark>');
+        return `<span class="match-preview"><span class="match-source">${label}</span>${highlighted}</span>`;
+      }
+      return '';
+    }
+
+    // --- Render Grouped Session List ---
+    function renderGroupedSessionList(sessions, containerId) {
+      const container = document.getElementById(containerId);
+      const periods = groupByTimePeriod(sessions, state.granularity);
+      let html = '';
+
+      for (const period of periods) {
+        const headerText = formatPeriodHeader(period.key, state.granularity, period.sessions.length);
+        html += `<div class="time-group-header">
+          <span>${escapeHtml(headerText)}</span>
+          <span class="count">${period.sessions.length} session${period.sessions.length !== 1 ? 's' : ''}</span>
+        </div>`;
+
+        const collapsed = collapseSimilarSessions(period.sessions);
+
+        for (const group of collapsed) {
+          if (group.items.length === 1) {
+            const s = group.items[0];
+            const totalTokens = (s.input_tokens || 0) + (s.output_tokens || 0);
+            const preview = getMatchPreview(s, state.findQuery);
+            html += `<div class="session-row" data-session-id="${s.session_id}">
+              <span class="session-time">${formatDate(s.start_time)}</span>
+              <span class="session-summary">${escapeHtml(s.summary || s.first_prompt || s.session_id)}${preview}</span>
+              <span class="session-project">${escapeHtml(shortProject(s.project))}</span>
+              <span class="session-tokens">${formatTokens(totalTokens)}</span>
+            </div>`;
+          } else {
+            // Collapsed group row
+            const first = group.items[0];
+            const last = group.items[group.items.length - 1];
+            const totalTokens = group.items.reduce((sum, s) => sum + (s.input_tokens || 0) + (s.output_tokens || 0), 0);
+            const isExpanded = state.expandedGroups.has(group.key);
+            const timeStr = formatTime(last.start_time) + ' - ' + formatTime(first.start_time);
+            const label = first.summary || first.first_prompt || first.session_id;
+            // Truncate long JSON-heavy labels
+            const shortLabel = label.length > 60 ? label.slice(0, 57) + '...' : label;
+
+            html += `<div class="session-group-row" data-group-key="${escapeHtml(group.key)}">
+              <span class="session-time">${timeStr}</span>
+              <span class="session-summary">
+                <span class="group-badge">${group.items.length}x</span>
+                ${escapeHtml(shortLabel)}
+              </span>
+              <span class="session-project">${escapeHtml(shortProject(first.project))}</span>
+              <span class="session-tokens">${formatTokens(totalTokens)}</span>
+            </div>`;
+
+            if (isExpanded) {
+              html += `<div class="group-expanded">`;
+              for (const s of group.items) {
+                const st = (s.input_tokens || 0) + (s.output_tokens || 0);
+                const preview = getMatchPreview(s, state.findQuery);
+                html += `<div class="session-row" data-session-id="${s.session_id}">
+                  <span class="session-time">${formatTime(s.start_time)}</span>
+                  <span class="session-summary">${escapeHtml(s.summary || s.first_prompt || s.session_id)}${preview}</span>
+                  <span class="session-tokens">${formatTokens(st)}</span>
+                </div>`;
+              }
+              html += '</div>';
+            }
+          }
+        }
+      }
+
+      if (sessions.length === 0) {
+        html = '<div style="padding: var(--space-md); color: var(--c-meta); font-style: italic;">No sessions match your search.</div>';
+      }
+
+      container.innerHTML = html;
+      // Event delegation is set up once via setupSessionListDelegation()
+    }
+
+    // --- One-time event delegation for session lists ---
+    function setupSessionListDelegation(containerId) {
+      const container = document.getElementById(containerId);
+      container.addEventListener('click', (e) => {
+        // Session row click
+        const row = e.target.closest('.session-row');
+        if (row && row.dataset.sessionId) {
+          e.stopPropagation();
+          openSession(row.dataset.sessionId);
+          return;
+        }
+        // Group row click (expand/collapse)
+        const groupRow = e.target.closest('.session-group-row');
+        if (groupRow && groupRow.dataset.groupKey) {
+          const key = groupRow.dataset.groupKey;
+          if (state.expandedGroups.has(key)) {
+            state.expandedGroups.delete(key);
+          } else {
+            state.expandedGroups.add(key);
+          }
+          applyFiltersAndRender();
+        }
+      });
+    }
+    setupSessionListDelegation('recent-sessions');
+
+    // --- Granularity Toggle ---
+    document.querySelectorAll('.granularity-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.granularity = btn.dataset.granularity;
+        document.querySelectorAll('.granularity-btn').forEach(b => b.classList.toggle('active', b === btn));
+        state.expandedGroups.clear();
+        renderChart();
+        applyFiltersAndRender();
+      });
+    });
+
+    function formatTime(iso) {
+      if (!iso) return '--';
+      const d = new Date(iso);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    // Pagination
+    document.getElementById('prev-page').addEventListener('click', () => loadSessions(state.page - 1, state.dateFilter));
+    document.getElementById('next-page').addEventListener('click', () => loadSessions(state.page + 1, state.dateFilter));
+
+    // --- Open Session Detail ---
+    async function openSession(sessionId) {
+      state.currentSessionId = sessionId;
+      switchView('session');
+
+      const meta = state.sessions.find(s => s.session_id === sessionId);
+
+      // Render left panel meta
+      const metaPanel = document.getElementById('session-meta-panel');
+      if (meta) {
+        const rows = [
+          ['Project', shortProject(meta.project)],
+          ['Started', formatDate(meta.start_time)],
+          ['Duration', (meta.duration_minutes || 0) + ' min'],
+          ['User Msgs', meta.user_messages],
+          ['Asst Msgs', meta.assistant_messages],
+          ['Tokens In', formatTokens(meta.input_tokens || 0)],
+          ['Tokens Out', formatTokens(meta.output_tokens || 0)],
+          ['Lines +/-', `+${meta.lines_added || 0} / -${meta.lines_removed || 0}`],
+        ];
+        let html = '';
+        for (const [k, v] of rows) {
+          html += `<div class="meta-row"><span class="key">${k}</span><span>${v}</span></div>`;
+        }
+        // Tool counts
+        if (meta.tool_counts) {
+          html += '<div style="margin-top: var(--space-sm);">';
+          for (const [tool, count] of Object.entries(meta.tool_counts).sort((a, b) => b[1] - a[1])) {
+            html += `<div class="meta-row"><span class="key">${escapeHtml(tool)}</span><span>${count}</span></div>`;
+          }
+          html += '</div>';
+        }
+        // Resume button
+        html += `<div style="margin-top: var(--space-md); padding: var(--space-sm) 0;">
+          <code style="font-size: 11px; background: rgba(0,0,0,0.06); padding: 4px 8px; display: block;">claude --resume ${sessionId}</code>
+        </div>`;
+        metaPanel.innerHTML = html;
+      }
+
+      // Render right panel title
+      document.getElementById('session-title').textContent =
+        meta?.summary || meta?.first_prompt?.slice(0, 60) || sessionId;
+
+      // Session action links (view/download raw)
+      const detailContainer = document.getElementById('session-detail');
+      detailContainer.classList.add('visible');
+
+      const actionsHtml = `<div class="session-actions">
+        <button class="session-action-link" onclick="viewRawSession('${sessionId}')">View raw transcript</button>
+        <button class="session-action-link" onclick="downloadSession('${sessionId}')">Download session (.md)</button>
+      </div>`;
+
+      detailContainer.innerHTML = actionsHtml + '<div class="loading visible">Analyzing session</div>';
+
+      // Ask agent for full structured detail
+      try {
+        const response = await streamAgent(
+          `Get the detail for session ${sessionId}. Format your response as a well-structured document:
+
+1. Start with a one-paragraph **Executive Summary** of what was accomplished.
+
+2. **Key Metrics** — present as a markdown table with columns: Metric, Value. Include: total messages, user messages, assistant messages, tokens in/out, duration, lines changed, error count.
+
+3. **Workflow Timeline** — describe the major phases of the session in order (what the user asked, what tools were used, what was produced). Use a numbered list.
+
+4. **Tool Usage** — show a markdown table with columns: Tool, Count, Purpose. Include all tools used.
+
+5. **Insights & Suggestions** — based on the session patterns, provide 2-4 actionable suggestions formatted as:
+   ### Suggestion: [Title]
+   **Why**: [One sentence explanation]
+   **Prompt to try**: \`[A concrete prompt the user could use next time]\`
+   **Apply to**: workflow | this project | all sessions
+
+Keep it concise but thorough. Use markdown tables and headers for structure.`
+        );
+
+        // Render the response as a proper document
+        detailContainer.innerHTML = actionsHtml + `<div class="agent-response visible">${renderMarkdown(response.text)}</div>`;
+
+        // Add interactive suggestion cards directly on the live DOM
+        addSuggestionInteractivity(detailContainer);
+        if (response.cost) {
+          detailContainer.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
+        }
+
+        // Store raw text for download
+        detailContainer.dataset.rawText = response.text;
+      } catch (e) {
+        detailContainer.innerHTML = actionsHtml + `<div style="color: var(--c-brand);">Error loading detail: ${escapeHtml(String(e))}</div>`;
+      }
+    }
+
+    document.getElementById('back-to-list').addEventListener('click', () => switchView('overview'));
+
+    // --- Session download/view helpers ---
+
+    async function viewRawSession(sessionId) {
+      const detailContainer = document.getElementById('session-detail');
+      // Toggle: if transcript already showing, switch back to summary
+      if (detailContainer.dataset.showingTranscript === 'true') {
+        detailContainer.dataset.showingTranscript = 'false';
+        // Re-trigger openSession to show agent summary
+        openSession(sessionId);
+        return;
+      }
+
+      detailContainer.innerHTML = '<div class="loading visible">Loading transcript</div>';
+
+      try {
+        const res = await fetch(`/api/transcript/${sessionId}`);
+        const data = await res.json();
+
+        if (data.error) {
+          detailContainer.innerHTML = `<div style="color: var(--c-brand);">Error: ${escapeHtml(data.error)}</div>`;
+          return;
+        }
+
+        let html = `<div class="session-actions">
+          <button class="session-action-link active" onclick="viewRawSession('${sessionId}')">Transcript</button>
+          <button class="session-action-link" onclick="openSession('${sessionId}')">Agent Summary</button>
+          <button class="session-action-link" onclick="downloadSession('${sessionId}')">Download .md</button>
+        </div>`;
+
+        html += '<div class="transcript">';
+        let msgIdx = 0;
+        for (const msg of data.messages) {
+          if (!msg.content && msg.tools.length === 0) continue;
+          const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
+
+          html += `<div class="transcript-msg" style="--msg-i:${msgIdx++}">
+            <div class="transcript-role ${msg.role}">${msg.role}${timeStr ? `<span class="transcript-time">${timeStr}</span>` : ''}</div>`;
+
+          if (msg.content) {
+            html += `<div class="transcript-text">${renderMarkdown(msg.content)}</div>`;
+          }
+
+          if (msg.tools.length > 0) {
+            html += '<div class="transcript-tools">';
+            for (const t of msg.tools) {
+              const errClass = t.isError ? 'error' : '';
+              html += `<span class="transcript-tool ${errClass}">${escapeHtml(t.name)}</span>`;
+            }
+            html += '</div>';
+          }
+
+          html += '</div>';
+        }
+        html += '</div>';
+
+        detailContainer.innerHTML = html;
+        detailContainer.dataset.showingTranscript = 'true';
+
+        // Store transcript for download
+        const mdText = data.messages
+          .filter(m => m.content)
+          .map(m => `## ${m.role}\n\n${m.content}`)
+          .join('\n\n---\n\n');
+        detailContainer.dataset.rawText = mdText;
+      } catch (e) {
+        detailContainer.innerHTML = `<div style="color: var(--c-brand);">Error: ${escapeHtml(String(e))}</div>`;
+      }
+    }
+
+    function downloadSession(sessionId) {
+      const detailContainer = document.getElementById('session-detail');
+      const raw = detailContainer.dataset.rawText;
+      if (!raw) return;
+      const blob = new Blob([`# Session: ${sessionId}\n\n${raw}`], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${sessionId.slice(0, 8)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function addSuggestionInteractivity(containerEl) {
+      // Mark code elements that look like prompts directly on the live DOM (no double-serialization)
+      containerEl.querySelectorAll('code').forEach(code => {
+        const text = code.textContent;
+        if (text.length > 15 && /^[A-Z]/.test(text)) {
+          code.classList.add('copyable-prompt');
+          code.style.cursor = 'pointer';
+          code.title = 'Click to copy this prompt';
+          code.dataset.copyText = text;
+        }
+      });
+    }
+
+    // Event delegation for copyable prompts
+    document.getElementById('session-detail').addEventListener('click', (e) => {
+      const code = e.target.closest('.copyable-prompt');
+      if (!code || !code.dataset.copyText) return;
+      const text = code.dataset.copyText;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = code.textContent;
+        code.textContent = 'Copied!';
+        code.style.color = 'var(--c-brand)';
+        setTimeout(() => {
+          code.textContent = original;
+          code.style.color = '';
+        }, 1500);
+      });
+    });
+
+    // --- Search ---
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        state.searchMode = tag.dataset.mode;
+      });
+    });
+
+    document.getElementById('search-btn').addEventListener('click', doSearch);
+    document.getElementById('search-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    async function doSearch() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) return;
+
+      const btn = document.getElementById('search-btn');
+      btn.disabled = true;
+
+      const loading = document.getElementById('search-loading');
+      const responseEl = document.getElementById('search-response');
+      const resultsEl = document.getElementById('search-results');
+      loading.classList.add('visible');
+      responseEl.classList.remove('visible');
+      responseEl.textContent = '';
+      resultsEl.innerHTML = '';
+
+      if (state.searchMode === 'text') {
+        // Direct REST search
+        try {
+          const res = await fetch(`/api/sessions?search=${encodeURIComponent(query)}&limit=50`);
+          const data = await res.json();
+          loading.classList.remove('visible');
+          renderSessionList(data.sessions, 'search-results');
+          responseEl.textContent = `Found ${data.total} sessions matching "${query}"`;
+          responseEl.classList.add('visible');
+        } catch (e) {
+          loading.classList.remove('visible');
+          responseEl.textContent = `Error: ${e}`;
+          responseEl.classList.add('visible');
+        }
+      } else {
+        // Semantic search via agent
+        const agentStatus = document.getElementById('agent-status');
+        agentStatus.classList.add('active');
+        document.getElementById('agent-tool-calls').innerHTML = '';
+
+        try {
+          const response = await streamAgent(
+            `Search for sessions matching: "${query}". Use the search_sessions tool for semantic search. Then summarize what you found.`,
+            (event) => {
+              if (event.type === 'tool_use') {
+                const callsEl = document.getElementById('agent-tool-calls');
+                callsEl.innerHTML += `<div class="agent-tool-call">${escapeHtml(event.tool)}(${JSON.stringify(event.input).slice(0, 80)})</div>`;
+              }
+            }
+          );
+          loading.classList.remove('visible');
+          responseEl.innerHTML = renderMarkdown(response.text);
+          responseEl.classList.add('visible');
+          if (response.cost) {
+            responseEl.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
+          }
+        } catch (e) {
+          loading.classList.remove('visible');
+          responseEl.textContent = `Error: ${e}`;
+          responseEl.classList.add('visible');
+        }
+        agentStatus.classList.remove('active');
+      }
+      btn.disabled = false;
+    }
+
+    // --- Insights ---
+    document.querySelectorAll('.insights-nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        if (action === 'load-report') loadInsightsReport();
+      });
+    });
+
+    document.getElementById('insights-ask-btn').addEventListener('click', askInsightsAgent);
+    document.getElementById('insights-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') askInsightsAgent();
+    });
+
+    async function loadInsightsReport() {
+      const loading = document.getElementById('insights-loading');
+      const responseEl = document.getElementById('insights-response');
+      loading.classList.add('visible');
+      responseEl.classList.remove('visible');
+
+      try {
+        const response = await streamAgent(
+          'Get the latest insights report and present it in a clear, organized way. Highlight the most important improvement suggestions.'
+        );
+        loading.classList.remove('visible');
+        responseEl.innerHTML = renderMarkdown(response.text);
+        responseEl.classList.add('visible');
+        if (response.cost) {
+          responseEl.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
+        }
+      } catch (e) {
+        loading.classList.remove('visible');
+        responseEl.textContent = `Error: ${e}`;
+        responseEl.classList.add('visible');
+      }
+    }
+
+    async function askInsightsAgent() {
+      const input = document.getElementById('insights-input');
+      const query = input.value.trim();
+      if (!query) return;
+      const btn = document.getElementById('insights-ask-btn');
+      btn.disabled = true;
+
+      const loading = document.getElementById('insights-loading');
+      const responseEl = document.getElementById('insights-response');
+      loading.classList.add('visible');
+      responseEl.classList.remove('visible');
+
+      try {
+        const response = await streamAgent(
+          `Analyze my Claude Code usage to answer: ${query}. Use get_dashboard_stats and get_insights_report tools as needed.`
+        );
+        loading.classList.remove('visible');
+        responseEl.innerHTML = renderMarkdown(response.text);
+        responseEl.classList.add('visible');
+        if (response.cost) {
+          responseEl.innerHTML += `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>`;
+        }
+      } catch (e) {
+        loading.classList.remove('visible');
+        responseEl.textContent = `Error: ${e}`;
+        responseEl.classList.add('visible');
+      }
+      btn.disabled = false;
+    }
+
+    // --- SSE Agent Stream ---
+    async function streamAgent(promptText, onEvent) {
+      return new Promise((resolve, reject) => {
+        let fullText = '';
+        let result = {};
+
+        fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText }),
+        }).then(response => {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          function read() {
+            reader.read().then(({ done, value }) => {
+              if (done) {
+                resolve({ text: fullText, ...result });
+                return;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  resolve({ text: fullText, ...result });
+                  return;
+                }
+
+                try {
+                  const event = JSON.parse(data);
+                  if (event.type === 'text') {
+                    fullText += event.content;
+                  } else if (event.type === 'result') {
+                    result = { cost: event.cost, turns: event.turns };
+                  } else if (event.type === 'error') {
+                    reject(new Error(event.message));
+                    return;
+                  }
+                  if (onEvent) onEvent(event);
+                } catch {}
+              }
+
+              read();
+            }).catch(reject);
+          }
+          read();
+        }).catch(reject);
+      });
+    }
+
+    // --- Markdown Renderer (with tables, lists, paragraphs) ---
+    function renderMarkdown(text) {
+      if (!text) return '';
+
+      // First extract code blocks so they don't get processed
+      const codeBlocks = [];
+      text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        codeBlocks.push(`<pre><code>${escapeHtml(code)}</code></pre>`);
+        return `\x00CB${codeBlocks.length - 1}\x00`;
+      });
+
+      // Split into blocks by double newline
+      const blocks = text.split(/\n\n+/);
+      const html = [];
+
+      for (const block of blocks) {
+        const trimmed = block.trim();
+        if (!trimmed) continue;
+
+        // Check for code block placeholder
+        const cbMatch = trimmed.match(/^\x00CB(\d+)\x00$/);
+        if (cbMatch) {
+          html.push(codeBlocks[parseInt(cbMatch[1])]);
+          continue;
+        }
+
+        // Heading
+        const h1 = trimmed.match(/^# (.+)$/m);
+        const h2 = trimmed.match(/^## (.+)$/m);
+        const h3 = trimmed.match(/^### (.+)$/m);
+        if (h3) { html.push(`<h3>${inlineFormat(h3[1])}</h3>`); continue; }
+        if (h2) { html.push(`<h2>${inlineFormat(h2[1])}</h2>`); continue; }
+        if (h1) { html.push(`<h1>${inlineFormat(h1[1])}</h1>`); continue; }
+
+        // Horizontal rule
+        if (/^---+$/.test(trimmed)) { html.push('<hr>'); continue; }
+
+        // Table: detect by separator row |---|---|
+        const lines = trimmed.split('\n');
+        if (lines.length >= 2 && /^\|[\s-:|]+\|$/.test(lines[1]?.trim())) {
+          html.push(renderTable(lines));
+          continue;
+        }
+
+        // Unordered list
+        if (/^[-*] /.test(trimmed)) {
+          const items = trimmed.split('\n')
+            .filter(l => /^[-*] /.test(l.trim()))
+            .map(l => `<li>${inlineFormat(l.trim().replace(/^[-*] /, ''))}</li>`);
+          html.push(`<ul>${items.join('')}</ul>`);
+          continue;
+        }
+
+        // Ordered list
+        if (/^\d+\. /.test(trimmed)) {
+          const items = trimmed.split('\n')
+            .filter(l => /^\d+\. /.test(l.trim()))
+            .map(l => `<li>${inlineFormat(l.trim().replace(/^\d+\. /, ''))}</li>`);
+          html.push(`<ol>${items.join('')}</ol>`);
+          continue;
+        }
+
+        // Default: paragraph
+        html.push(`<p>${inlineFormat(trimmed.replace(/\n/g, '<br>'))}</p>`);
+      }
+
+      return html.join('\n');
+    }
+
+    function inlineFormat(text) {
+      return escapeHtml(text)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    }
+
+    function renderTable(lines) {
+      const parseRow = line =>
+        line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+
+      const headers = parseRow(lines[0]);
+      // lines[1] is the separator row, skip it
+      const rows = lines.slice(2)
+        .filter(l => l.trim().startsWith('|'))
+        .map(parseRow);
+
+      let html = '<table><thead><tr>';
+      for (const h of headers) html += `<th>${inlineFormat(h)}</th>`;
+      html += '</tr></thead><tbody>';
+      for (const row of rows) {
+        html += '<tr>';
+        for (let i = 0; i < headers.length; i++) {
+          html += `<td>${inlineFormat(row[i] || '')}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // --- Actionable Insights ---
+
+    document.getElementById('generate-actions-btn').addEventListener('click', generateActions);
+
+    async function generateActions() {
+      const btn = document.getElementById('generate-actions-btn');
+      const loading = document.getElementById('insights-loading');
+      const cardsEl = document.getElementById('action-cards');
+      const responseEl = document.getElementById('insights-response');
+
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+      loading.classList.add('visible');
+      cardsEl.innerHTML = '';
+      responseEl.classList.remove('visible');
+
+      try {
+        const res = await fetch('/api/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+
+        loading.classList.remove('visible');
+
+        if (data.error) {
+          responseEl.textContent = `Error: ${data.error}`;
+          responseEl.classList.add('visible');
+          return;
+        }
+
+        if (data.actions && data.actions.length > 0) {
+          renderActionCards(data.actions);
+        } else {
+          responseEl.textContent = 'No actionable insights generated.';
+          responseEl.classList.add('visible');
+        }
+      } catch (e) {
+        loading.classList.remove('visible');
+        responseEl.textContent = `Error: ${e}`;
+        responseEl.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Actions';
+      }
+    }
+
+    // Store action artifacts by ID for safe retrieval (avoids inline JSON in HTML)
+    const actionArtifacts = new Map();
+
+    function renderActionCards(actions) {
+      const container = document.getElementById('action-cards');
+      actionArtifacts.clear();
+      const fragment = document.createDocumentFragment();
+
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        const actionId = action.id || `action-${i}`;
+        const cat = action.category || 'workflow';
+        const effort = action.effort || 'medium';
+        const hasArtifact = action.artifact && action.artifact.type !== 'info' && action.artifact.content;
+
+        if (hasArtifact) {
+          actionArtifacts.set(actionId, action.artifact);
+        }
+
+        const card = document.createElement('div');
+        card.className = 'action-card';
+        card.dataset.actionId = actionId;
+
+        let inner = `<div class="action-card-header">
+            <span class="action-category ${escapeHtml(cat)}">${escapeHtml(cat)}</span>
+            <span class="action-effort">${escapeHtml(effort)} effort</span>
+          </div>
+          <div class="action-title">${escapeHtml(action.title || '')}</div>
+          <div class="action-observation">${escapeHtml(action.observation || '')}</div>
+          <div class="action-description">${escapeHtml(action.description || '')}</div>`;
+
+        if (hasArtifact) {
+          inner += `<div class="action-artifact-path">${escapeHtml(action.artifact.path || '')}</div>
+            <div class="action-artifact">${escapeHtml(action.artifact.content)}</div>
+            <div class="action-buttons">
+              <button class="action-btn copy-btn" data-action-id="${escapeHtml(actionId)}">Copy</button>
+              <button class="action-btn primary apply-btn" data-action-id="${escapeHtml(actionId)}">Apply</button>
+            </div>`;
+        }
+
+        card.innerHTML = inner;
+        fragment.appendChild(card);
+      }
+
+      container.innerHTML = '';
+      container.appendChild(fragment);
+
+      // Bind buttons
+      container.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const artifact = actionArtifacts.get(btn.dataset.actionId);
+          if (!artifact) return;
+          navigator.clipboard.writeText(artifact.content).then(() => {
+            btn.textContent = 'Copied';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+          });
+        });
+      });
+
+      container.querySelectorAll('.apply-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const artifact = actionArtifacts.get(btn.dataset.actionId);
+          if (!artifact) return;
+          btn.disabled = true;
+          btn.textContent = 'Applying...';
+
+          try {
+            const res = await fetch('/api/apply-action', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ artifact }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              const buttonsDiv = btn.parentElement;
+              buttonsDiv.innerHTML = '';
+              const span = document.createElement('span');
+              span.className = 'action-applied';
+              span.textContent = `Applied -- ${data.action} ${data.path}`;
+              buttonsDiv.appendChild(span);
+            } else {
+              btn.textContent = 'Failed';
+              btn.title = data.error || 'Unknown error';
+              setTimeout(() => { btn.textContent = 'Apply'; btn.disabled = false; }, 2000);
+            }
+          } catch (e) {
+            btn.textContent = 'Error';
+            setTimeout(() => { btn.textContent = 'Apply'; btn.disabled = false; }, 2000);
+          }
+        });
+      });
+    }
+
+    // --- Init ---
+    document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+
+    loadStats();
+    loadSessions();
+  </script>
+</body>
+</html>
