@@ -164,6 +164,7 @@
       margin: 0 8px;
     }
     .tool-bar-fill {
+      display: block;
       height: 100%;
       background: var(--c-ink);
       opacity: 0.3;
@@ -521,6 +522,7 @@
     .agent-response h1 { font-size: 22px; margin: var(--space-lg) 0 var(--space-sm); font-family: var(--font-sans); }
     .agent-response h2 { font-size: 17px; margin: var(--space-lg) 0 var(--space-sm); font-family: var(--font-sans); border-bottom: 1px solid var(--border-on-white); padding-bottom: 6px; }
     .agent-response h3 { font-size: 14px; margin: var(--space-md) 0 var(--space-xs); font-family: var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-meta); }
+    .agent-response h4 { font-size: 14px; margin: var(--space-sm) 0 var(--space-xs); font-family: var(--font-sans); }
     .agent-response p { margin: 0 0 var(--space-sm); }
     .agent-response code {
       background: rgba(0,0,0,0.06);
@@ -717,7 +719,7 @@
       font-size: 15px;
       line-height: 1.7;
     }
-    .insights-content h2, .insights-content h3 {
+    .insights-content h2, .insights-content h3, .insights-content h4 {
       font-family: var(--font-sans);
       font-weight: 500;
       margin: var(--space-md) 0 var(--space-sm);
@@ -962,6 +964,13 @@
       color: var(--c-white);
       border-color: var(--c-ink);
     }
+    .session-action-btn {
+      background: var(--c-brand);
+      color: var(--c-white);
+      border-color: var(--c-brand);
+    }
+    .session-action-btn:hover { background: var(--c-brand-dark); }
+    .session-action-btn:disabled { opacity: 0.6; cursor: wait; }
 
     /* Smart filter chips */
     .smart-filters {
@@ -1456,6 +1465,7 @@
       findQuery: '',
       activeFilter: null, // smart filter key
       smartFilters: [], // [{label, key, count}]
+      insightsCache: JSON.parse(localStorage.getItem('insightsCache') || '{}'), // sessionId -> { text, cost, turns }
     };
 
     // --- Navigation ---
@@ -1464,6 +1474,10 @@
         switchView(tab.dataset.view);
       });
     });
+
+    function saveInsightsCache() {
+      try { localStorage.setItem('insightsCache', JSON.stringify(state.insightsCache)); } catch {}
+    }
 
     function switchView(view) {
       state.currentView = view;
@@ -1532,7 +1546,7 @@
       for (const [name, count] of tools) {
         const pct = (count / max * 100).toFixed(1);
         html += `<div class="tool-bar-row">
-          <span class="tool-bar-label">${escapeHtml(name)}</span>
+          <span class="tool-bar-label" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
           <span class="tool-bar-track"><span class="tool-bar-fill" style="width:${pct}%"></span></span>
           <span class="tool-bar-count">${formatTokens(count)}</span>
         </div>`;
@@ -1548,8 +1562,28 @@
 
       let bars = []; // [{key, count, label}]
 
-      if (state.granularity === 'month') {
-        // Aggregate daily data into weekly buckets
+      if (state.granularity === 'day') {
+        // Aggregate daily data into monthly buckets
+        const monthMap = new Map();
+        for (const [date, count] of dailyData) {
+          const monthKey = date.slice(0, 7); // YYYY-MM
+          monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + count);
+        }
+        const sorted = [...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        const recent = sorted.slice(-12); // last 12 months
+        for (const [monthKey, count] of recent) {
+          const d = new Date(monthKey + '-15T12:00:00');
+          const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          bars.push({ key: monthKey, count, label: `${label}: ${count}` });
+        }
+      } else if (state.granularity === 'month') {
+        // Daily bars (last 60 days)
+        const recent = dailyData.slice(-60);
+        for (const [date, count] of recent) {
+          bars.push({ key: date, count, label: `${date}: ${count} sessions` });
+        }
+      } else {
+        // Week: aggregate daily data into weekly buckets
         const weekMap = new Map();
         for (const [date, count] of dailyData) {
           const d = new Date(date + 'T12:00:00');
@@ -1567,27 +1601,6 @@
           const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           bars.push({ key: weekKey, count, label: `Week of ${label}: ${count}` });
         }
-      } else if (state.granularity === 'day') {
-        // Show hourly distribution for selected date (or today)
-        const targetDate = state.dateFilter || new Date().toISOString().slice(0, 10);
-        const hourCounts = new Array(24).fill(0);
-        // Count from loaded sessions
-        for (const s of state.allSessions) {
-          if (s.start_time && s.start_time.slice(0, 10) === targetDate) {
-            const hour = new Date(s.start_time).getHours();
-            hourCounts[hour]++;
-          }
-        }
-        for (let h = 0; h < 24; h++) {
-          const hStr = String(h).padStart(2, '0');
-          bars.push({ key: `${targetDate}T${hStr}`, count: hourCounts[h], label: `${hStr}:00 -- ${hourCounts[h]} sessions` });
-        }
-      } else {
-        // Week: daily bars (last 60 days)
-        const recent = dailyData.slice(-60);
-        for (const [date, count] of recent) {
-          bars.push({ key: date, count, label: `${date}: ${count} sessions` });
-        }
       }
 
       const max = Math.max(...bars.map(b => b.count), 1);
@@ -1603,15 +1616,9 @@
 
       // Date labels
       if (bars.length > 0) {
-        if (state.granularity === 'day') {
-          const targetDate = state.dateFilter || new Date().toISOString().slice(0, 10);
-          const d = new Date(targetDate + 'T12:00:00');
-          datesContainer.innerHTML = `<span>00:00</span><span>${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span><span>23:00</span>`;
-        } else {
-          const first = bars[0].key.slice(5);
-          const last = bars[bars.length - 1].key.slice(5);
-          datesContainer.innerHTML = `<span>${first}</span><span>${last}</span>`;
-        }
+        const first = bars[0].key.slice(5);
+        const last = bars[bars.length - 1].key.slice(5);
+        datesContainer.innerHTML = `<span>${first}</span><span>${last}</span>`;
       }
     }
 
@@ -1620,7 +1627,7 @@
       const bar = e.target.closest('.chart-bar');
       if (!bar) return;
       const date = bar.dataset.date;
-      if (state.granularity === 'day') return; // hourly bars aren't filterable
+      if (state.granularity === 'day') return; // monthly bars aren't date-filterable
       if (state.dateFilter === date) {
         clearDateFilter();
       } else {
@@ -2053,7 +2060,28 @@
       const actionsHtml = `<div class="session-actions">
         <button class="session-action-link" onclick="viewRawSession('${sessionId}')">View raw transcript</button>
         <button class="session-action-link" onclick="downloadSession('${sessionId}')">Download session (.md)</button>
+        <button class="session-action-link session-action-btn" id="session-gen-actions-btn" onclick="generateSessionActions('${sessionId}')">Generate Actionable</button>
       </div>`;
+
+      // Check cache first
+      const cached = state.insightsCache[sessionId];
+      if (cached) {
+        detailContainer.innerHTML = actionsHtml + `<div class="agent-response visible">${renderMarkdown(cached.text)}</div>`;
+        addSuggestionInteractivity(detailContainer);
+        if (cached.cost) {
+          detailContainer.innerHTML += `<div class="cost-display">Agent cost: $${cached.cost.toFixed(4)} (${cached.turns} turns) (cached)</div>`;
+        }
+        detailContainer.dataset.rawText = cached.text;
+        // Restore action cards if any
+        if (cached.actions) {
+          const actionsContainer = document.createElement('div');
+          actionsContainer.className = 'action-cards';
+          actionsContainer.id = 'session-action-cards';
+          detailContainer.appendChild(actionsContainer);
+          renderActionCards(cached.actions, actionsContainer);
+        }
+        return;
+      }
 
       detailContainer.innerHTML = actionsHtml + '<div class="loading visible">Analyzing session</div>';
 
@@ -2078,6 +2106,10 @@
 
 Keep it concise but thorough. Use markdown tables and headers for structure.`
         );
+
+        // Cache the response
+        state.insightsCache[sessionId] = { text: response.text, cost: response.cost, turns: response.turns };
+        saveInsightsCache();
 
         // Render the response as a proper document
         detailContainer.innerHTML = actionsHtml + `<div class="agent-response visible">${renderMarkdown(response.text)}</div>`;
@@ -2207,6 +2239,49 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
         }, 1500);
       });
     });
+
+    // --- Per-session actionable insights ---
+    async function generateSessionActions(sessionId) {
+      const btn = document.getElementById('session-gen-actions-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Analyzing...'; }
+
+      const detailContainer = document.getElementById('session-detail');
+      let cardsEl = document.getElementById('session-action-cards');
+      if (!cardsEl) {
+        cardsEl = document.createElement('div');
+        cardsEl.className = 'action-cards';
+        cardsEl.id = 'session-action-cards';
+        detailContainer.appendChild(cardsEl);
+      }
+      cardsEl.innerHTML = '<div class="loading visible">Generating actionable insights for this session</div>';
+
+      try {
+        const meta = state.sessions.find(s => s.session_id === sessionId);
+        const focus = meta ? `session in project ${meta.project || 'unknown'}, summary: ${meta.summary || meta.first_prompt || ''}` : `session ${sessionId}`;
+        const res = await fetch('/api/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ focus: `Analyze this specific ${focus}. Session ID: ${sessionId}` }),
+        });
+        const data = await res.json();
+
+        if (data.actions && data.actions.length > 0) {
+          cardsEl.innerHTML = '';
+          renderActionCards(data.actions, cardsEl);
+          // Cache the actions alongside existing insights
+          if (state.insightsCache[sessionId]) {
+            state.insightsCache[sessionId].actions = data.actions;
+            saveInsightsCache();
+          }
+        } else {
+          cardsEl.innerHTML = '<p style="padding: var(--space-sm); opacity: 0.6;">No actionable insights generated for this session.</p>';
+        }
+      } catch (e) {
+        cardsEl.innerHTML = `<p style="color: var(--c-brand); padding: var(--space-sm);">Error: ${escapeHtml(String(e))}</p>`;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Generate Actionable'; }
+      }
+    }
 
     // --- Search ---
     document.querySelectorAll('.filter-tag').forEach(tag => {
@@ -2431,10 +2506,12 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
           continue;
         }
 
-        // Heading
+        // Heading (check most-specific first)
+        const h4 = trimmed.match(/^#{4} (.+)$/m);
+        const h3 = trimmed.match(/^#{3} (.+)$/m);
+        const h2 = trimmed.match(/^#{2} (.+)$/m);
         const h1 = trimmed.match(/^# (.+)$/m);
-        const h2 = trimmed.match(/^## (.+)$/m);
-        const h3 = trimmed.match(/^### (.+)$/m);
+        if (h4) { html.push(`<h4>${inlineFormat(h4[1])}</h4>`); continue; }
         if (h3) { html.push(`<h3>${inlineFormat(h3[1])}</h3>`); continue; }
         if (h2) { html.push(`<h2>${inlineFormat(h2[1])}</h2>`); continue; }
         if (h1) { html.push(`<h1>${inlineFormat(h1[1])}</h1>`); continue; }
@@ -2476,6 +2553,7 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
 
     function inlineFormat(text) {
       return escapeHtml(text)
+        .replace(/&lt;br\s*\/?&gt;/g, '<br>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/\*([^*]+)\*/g, '<em>$1</em>');
@@ -2556,8 +2634,8 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
     // Store action artifacts by ID for safe retrieval (avoids inline JSON in HTML)
     const actionArtifacts = new Map();
 
-    function renderActionCards(actions) {
-      const container = document.getElementById('action-cards');
+    function renderActionCards(actions, targetContainer) {
+      const container = targetContainer || document.getElementById('action-cards');
       actionArtifacts.clear();
       const fragment = document.createDocumentFragment();
 
