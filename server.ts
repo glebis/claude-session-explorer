@@ -230,6 +230,28 @@ app.get("/api/stats", async (_req, res) => {
         weekend_work_days: calendarDays.filter(d => d.weekend && d.sessions > 0).length,
       },
       calendar_days: calendarDays,
+      // Project activity for swimlane (last 30 days, all sessions)
+      project_activity: (() => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+        const projDayCounts: Record<string, Record<string, number>> = {};
+        const projTotals: Record<string, number> = {};
+        for (const m of metas) {
+          const day = m.start_time?.slice(0, 10);
+          if (!day || day < cutoffStr) continue;
+          const parts = (m.project_path || "").split("/").filter(Boolean);
+          const proj = parts.slice(-1).join("/") || "unknown";
+          if (!projDayCounts[proj]) projDayCounts[proj] = {};
+          projDayCounts[proj][day] = (projDayCounts[proj][day] || 0) + 1;
+          projTotals[proj] = (projTotals[proj] || 0) + 1;
+        }
+        const topProjects = Object.entries(projTotals)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([p]) => p);
+        return { projects: topProjects, data: Object.fromEntries(topProjects.map(p => [p, projDayCounts[p] || {}])) };
+      })(),
     });
   } catch (err) {
     res.status(500).json({ error: String(err) });

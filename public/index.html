@@ -669,7 +669,11 @@
 
     /* Session detail view */
     .session-detail { display: none; }
-    .session-detail.visible { display: block; }
+    .session-detail.visible { display: block; animation: detailEnter 300ms var(--ease-out-quart); }
+    @keyframes detailEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .detail-section {
       margin-bottom: var(--space-lg);
     }
@@ -785,6 +789,7 @@
       transition: all 150ms;
     }
     .report-action-btn:hover { color: var(--c-ink); border-color: var(--c-ink); }
+    .report-delete-btn:hover { color: var(--c-brand); border-color: var(--c-brand); }
 
     /* Flashcard review mode */
     .flashcard-overlay {
@@ -1224,8 +1229,9 @@
       border: 1px solid var(--border-on-white);
       background: transparent;
       cursor: pointer;
-      margin-bottom: var(--space-md);
       font-family: var(--font-sans);
+      flex-shrink: 0;
+      margin-top: 4px;
     }
     .back-btn:hover { background: var(--c-bg-alt); }
 
@@ -1283,7 +1289,7 @@
 
     /* Calendar Module */
     .calendar-section {
-      margin-bottom: var(--space-lg);
+      margin-bottom: var(--space-sm);
     }
     .calendar-header {
       display: flex;
@@ -1320,8 +1326,8 @@
     }
     .calendar-grid {
       display: grid;
-      grid-template-columns: 28px repeat(7, 1fr);
-      gap: 2px;
+      grid-template-columns: 24px repeat(7, 1fr);
+      gap: 1px;
     }
     .calendar-weekday {
       font-size: 8px;
@@ -1339,8 +1345,8 @@
     }
     .calendar-day {
       aspect-ratio: 1;
-      min-height: 20px;
-      border-radius: 3px;
+      min-height: 14px;
+      border-radius: 2px;
       position: relative;
       cursor: pointer;
       transition: transform 100ms var(--ease-out-quart), box-shadow 150ms;
@@ -1532,9 +1538,9 @@
 
     /* Project swimlane timeline */
     .swimlane-section {
-      margin-bottom: var(--space-lg);
+      margin-bottom: var(--space-sm);
       border: 1px solid var(--border-on-white);
-      padding: var(--space-sm);
+      padding: var(--space-xs) var(--space-sm);
     }
     .swimlane-title {
       font-size: 12px;
@@ -1574,7 +1580,7 @@
       max-width: 100px;
     }
     .swimlane-cell {
-      min-height: 16px;
+      min-height: 12px;
       background: var(--c-bg-alt);
       cursor: pointer;
       position: relative;
@@ -1620,7 +1626,7 @@
 
     /* Heatmap */
     .heatmap-section {
-      padding: var(--space-sm) var(--space-md);
+      padding: var(--space-xs) var(--space-md);
       border-bottom: 1px solid var(--border-on-white);
     }
     .heatmap-title {
@@ -1654,7 +1660,7 @@
     }
     .heatmap-cell {
       aspect-ratio: 1;
-      min-height: 12px;
+      min-height: 10px;
       background: var(--c-brand);
       opacity: 0.05;
       cursor: pointer;
@@ -2099,9 +2105,33 @@
       animation-delay: calc(min(var(--msg-i, 0), 20) * 30ms);
     }
 
-    /* --- View switching: fade content --- */
-    .view {
-      animation: fadeIn 250ms var(--ease-out-quart);
+    /* --- View switching: fade + slide content --- */
+    .view.active {
+      animation: viewEnter 200ms var(--ease-out-quart);
+    }
+    @keyframes viewEnter {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Calendar cells: staggered pop-in --- */
+    .calendar-day:not(.empty) {
+      animation: cellReveal 300ms var(--ease-out-quart) backwards;
+      animation-delay: calc(var(--ci, 0) * 6ms);
+    }
+    @keyframes cellReveal {
+      from { opacity: 0; transform: scale(0.6); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* --- Swimlane cells: wave reveal per row --- */
+    .swimlane-cell {
+      animation: cellFade 250ms var(--ease-out-quart) backwards;
+      animation-delay: calc(var(--ci, 0) * 4ms);
+    }
+    @keyframes cellFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     /* --- Date filter bar: slide in --- */
@@ -2375,12 +2405,14 @@
 
       <!-- Session right: detail -->
       <div class="view" id="right-session">
-        <div class="content-header">
-          <span class="meta-label">Session Detail</span>
-          <h1 id="session-title">Select a Session</h1>
+        <div class="content-header" style="display:flex; align-items:flex-start; justify-content:space-between;">
+          <div>
+            <span class="meta-label">Session Detail</span>
+            <h1 id="session-title">Select a Session</h1>
+          </div>
+          <button class="back-btn" id="back-to-list">&larr; Back to list</button>
         </div>
         <div class="content-body">
-          <button class="back-btn" id="back-to-list">&larr; Back to list</button>
           <div class="session-detail" id="session-detail"></div>
         </div>
       </div>
@@ -2908,7 +2940,8 @@
 
     // --- Project Swimlane Timeline ---
     function renderSwimlane() {
-      if (!state.allSessions || state.allSessions.length === 0) return;
+      const pa = state.stats?.project_activity;
+      if (!pa || !pa.projects || pa.projects.length === 0) return;
 
       const section = document.getElementById('swimlane-section');
       const grid = document.getElementById('swimlane-grid');
@@ -2922,32 +2955,7 @@
         days.push(d.toISOString().slice(0, 10));
       }
 
-      // Top 5 projects by session count
-      const projectCounts = {};
-      for (const s of state.allSessions) {
-        const proj = shortProject(s.project);
-        if (proj) projectCounts[proj] = (projectCounts[proj] || 0) + 1;
-      }
-      const topProjects = Object.entries(projectCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([p]) => p);
-
-      if (topProjects.length === 0) return;
-
-      // Build activity map
-      const activityMap = {};
-      for (const s of state.allSessions) {
-        const proj = shortProject(s.project);
-        const day = s.start_time?.slice(0, 10);
-        if (proj && day) {
-          const key = `${proj}|${day}`;
-          activityMap[key] = (activityMap[key] || 0) + 1;
-        }
-      }
-
       section.style.display = '';
-      const cols = days.length + 1; // +1 for label column
       grid.style.gridTemplateColumns = `100px repeat(${days.length}, 1fr)`;
 
       let html = '';
@@ -2958,14 +2966,18 @@
         html += `<span class="swimlane-date-label">${label}</span>`;
       }
 
-      for (const proj of topProjects) {
+      for (let r = 0; r < pa.projects.length; r++) {
+        const proj = pa.projects[r];
         const shortName = proj.split('/').pop();
+        const projData = pa.data[proj] || {};
         html += `<span class="swimlane-label" title="${escapeHtml(proj)}">${escapeHtml(shortName)}</span>`;
-        for (const day of days) {
-          const count = activityMap[`${proj}|${day}`] || 0;
+        for (let c = 0; c < days.length; c++) {
+          const day = days[c];
+          const count = projData[day] || 0;
           const cls = count > 0 ? 'swimlane-cell active' : 'swimlane-cell';
           const opacity = count > 0 ? Math.min(0.3 + count * 0.2, 1) : 1;
-          html += `<span class="${cls}" style="${count > 0 ? `opacity:${opacity}` : ''}" data-tooltip="${escapeHtml(proj)} ${day}: ${count} sessions"></span>`;
+          const ci = c + r * 3; // diagonal wave: column + offset per row
+          html += `<span class="${cls}" style="--ci:${ci};${count > 0 ? `opacity:${opacity}` : ''}" data-tooltip="${escapeHtml(proj)} ${day}: ${count} sessions"></span>`;
         }
       }
 
@@ -3033,6 +3045,7 @@
 
       let currentMonth = '';
       let weekBuffer = [];
+      let cellIdx = 0;
 
       for (let i = 0; i < calDays.length; i++) {
         const d = calDays[i];
@@ -3104,7 +3117,8 @@
         }
         // Proportional font-size: 8px at low, 12px at max
         const valFontSize = d.sessions > 0 ? (8 + 4 * intensity).toFixed(1) : 8;
-        html += `<span class="${classes.join(' ')}" style="background:${bg}" data-date="${d.date}" data-tooltip="${tooltipParts.join('\n')}"><span class="day-number">${dayNum}</span>${displayVal ? `<span class="day-value" style="font-size:${valFontSize}px">${displayVal}</span>` : ''}</span>`;
+        html += `<span class="${classes.join(' ')}" style="--ci:${cellIdx};background:${bg}" data-date="${d.date}" data-tooltip="${tooltipParts.join('\n')}"><span class="day-number">${dayNum}</span>${displayVal ? `<span class="day-value" style="font-size:${valFontSize}px">${displayVal}</span>` : ''}</span>`;
+        if (d.sessions > 0) cellIdx++;
         weekBuffer.push(d);
       }
 
@@ -4059,6 +4073,7 @@
         <button class="session-action-link" onclick="viewRawSession('${sessionId}')">View raw transcript</button>
         <button class="session-action-link" onclick="downloadSession('${sessionId}')">Download session (.md)</button>
         <button class="session-action-link session-action-btn" id="session-gen-actions-btn" onclick="generateSessionActions('${sessionId}')">Generate Actionable</button>
+        <button class="session-action-link" onclick="regenerateInsight('${sessionId}')" title="Clear cached insight and re-analyze">Regenerate</button>
       </div>`;
 
       // Check cache first
@@ -4126,6 +4141,13 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
     }
 
     document.getElementById('back-to-list').addEventListener('click', () => switchView('overview'));
+
+    // --- Regenerate insight (clear cache, re-fetch) ---
+    async function regenerateInsight(sessionId) {
+      delete state.insightsCache[sessionId];
+      saveInsightsCache();
+      await openSession(sessionId);
+    }
 
     // --- Session download/view helpers ---
 
@@ -4438,6 +4460,8 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
         <div class="report-card-actions">
           <button class="report-action-btn" data-action="download-md">MD</button>
           <button class="report-action-btn" data-action="download-pdf">PDF</button>
+          <button class="report-action-btn" data-action="regenerate">Regenerate</button>
+          <button class="report-action-btn report-delete-btn" data-action="delete">Delete</button>
         </div>
       `;
 
@@ -4453,6 +4477,41 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
       card.querySelector('[data-action="download-pdf"]').addEventListener('click', (e) => {
         e.stopPropagation();
         downloadReportPdf(card);
+      });
+
+      // Regenerate: re-run the query and replace card content
+      card.querySelector('[data-action="regenerate"]').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const query = card.dataset.title;
+        const body = card.querySelector('.report-card-body');
+        body.innerHTML = '<div class="loading visible">Regenerating...</div>';
+        card.classList.add('expanded');
+        try {
+          const prompt = query === 'Latest Insights Report'
+            ? 'Get the latest insights report and present it in a clear, organized way. Highlight the most important improvement suggestions.'
+            : `Analyze my Claude Code usage to answer: ${query}. Use get_dashboard_stats and get_insights_report tools as needed.`;
+          const response = await streamAgent(prompt);
+          const costHtml = response.cost ? `<div class="cost-display">Agent cost: $${response.cost.toFixed(4)} (${response.turns} turns)</div>` : '';
+          body.innerHTML = renderMarkdown(response.text) + costHtml;
+          body.classList.add('visible');
+          card.querySelector('.report-card-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          card.dataset.ts = Date.now();
+          saveReportsToStorage();
+        } catch (err) {
+          body.innerHTML = `<p style="color:red;">Error: ${escapeHtml(String(err))}</p>`;
+        }
+      });
+
+      // Delete: remove card and update storage
+      card.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        card.remove();
+        saveReportsToStorage();
+        updateReportIndex();
+        // Hide header if no cards left
+        if (document.querySelectorAll('.report-card').length === 0) {
+          document.getElementById('report-list-header').style.display = 'none';
+        }
       });
 
       reportList.prepend(card);
