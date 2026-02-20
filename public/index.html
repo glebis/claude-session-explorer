@@ -1289,7 +1289,8 @@
 
     /* Calendar Module */
     .calendar-section {
-      margin-bottom: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-on-white);
     }
     .calendar-header {
       display: flex;
@@ -1626,7 +1627,7 @@
 
     /* Heatmap */
     .heatmap-section {
-      padding: var(--space-xs) var(--space-md);
+      padding: var(--space-sm) 0;
       border-bottom: 1px solid var(--border-on-white);
     }
     .heatmap-title {
@@ -1789,7 +1790,8 @@
     .quick-actions {
       display: flex;
       gap: 6px;
-      margin-bottom: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-on-white);
     }
     .quick-action-btn {
       padding: 5px 12px;
@@ -1916,6 +1918,21 @@
       border-top: 1px solid var(--border-on-white);
       color: #2E7D32;
       font-size: 11px;
+    }
+    .voice-tooltip-hint {
+      margin-top: 6px;
+      font-size: 9px;
+      color: var(--c-meta);
+      font-style: italic;
+    }
+    /* Input attention pulse when voice populates it */
+    @keyframes inputAttention {
+      0% { box-shadow: 0 0 0 0 rgba(17,17,17,0.15); }
+      40% { box-shadow: 0 0 0 4px rgba(17,17,17,0.1); }
+      100% { box-shadow: 0 0 0 0 rgba(17,17,17,0); }
+    }
+    .input-attention {
+      animation: inputAttention 800ms var(--ease-out-quart);
     }
     /* Mini waveform inside tooltip */
     .voice-mini-wave {
@@ -2267,6 +2284,13 @@
               <button class="filter-tag" id="suggestions-toggle" style="font-size:10px; cursor:pointer;">Suggestions</button>
             </div>
             <div id="insight-presets" style="margin-top: var(--space-xs);">
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7; margin: var(--space-xs) 0 4px; color: var(--c-ink);">Wellbeing & Sustainability</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+                <button class="filter-tag insight-preset" data-q="On what days do I seem to be working too much and need more breaks? Look at session duration, late-night activity, and weekend work.">Overwork days</button>
+                <button class="filter-tag insight-preset" data-q="Am I showing signs of burnout? Analyze my session patterns for unsustainable streaks: consecutive long days, shrinking breaks between sessions, increasing late-night work, or weekend coding binges.">Burnout check</button>
+                <button class="filter-tag insight-preset" data-q="How are my work-life boundaries? Identify sessions that start very early or end very late. Flag days with more than 8 hours of total session time.">Work-life balance</button>
+                <button class="filter-tag insight-preset" data-q="What does my rest and recovery pattern look like? Show gaps between sessions, days with no activity, and whether I take regular breaks during long sessions.">Rest patterns</button>
+              </div>
               <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.4; margin: var(--space-xs) 0 4px;">Productivity</div>
               <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
                 <button class="filter-tag insight-preset" data-q="What are my most productive hours and days?">Peak hours</button>
@@ -2481,6 +2505,7 @@
       <span class="voice-tooltip-text dim" id="voice-tooltip-text">Speak a command...</span>
     </div>
     <div class="voice-tooltip-result" id="voice-tooltip-result" style="display:none;"></div>
+    <div class="voice-tooltip-hint" id="voice-tooltip-hint" style="display:none;"></div>
   </div>
 
   <script>
@@ -5161,8 +5186,10 @@ Actions:
 Available insight presets: ${presetNames}
 If the user says a preset name (like "tool usage audit" or "error patterns"), use ask_insight with the matching preset's full question.
 If the user says "generate insights" or "generate actions", use generate_actions.
-If the user says "analyze" or "ask about" something, use ask_insight.
-If uncertain, use search with the user's full utterance.`;
+If the user asks a QUESTION or requests specific analysis about their sessions, usage, patterns, costs, longest/shortest/most/least anything -- use ask_insight. This includes requests like "longest sessions", "most expensive projects", "what did I work on yesterday", etc.
+Only use show_stats if the user explicitly says "show stats" or "go to overview/dashboard".
+Only use navigate if the user explicitly asks to switch tabs.
+If uncertain between ask_insight and other actions, prefer ask_insight.`;
     }
 
     const voiceActions = {
@@ -5251,6 +5278,7 @@ If uncertain, use search with the user's full utterance.`;
     const voiceTooltipText = document.getElementById('voice-tooltip-text');
     const voiceMiniWave = document.getElementById('voice-mini-wave');
     const voiceTooltipResult = document.getElementById('voice-tooltip-result');
+    const voiceTooltipHint = document.getElementById('voice-tooltip-hint');
 
     voiceBtn.addEventListener('click', () => {
       // Always (re)start listening on click -- even if stopped or idle
@@ -5274,6 +5302,7 @@ If uncertain, use search with the user's full utterance.`;
       voiceTooltipText.textContent = 'Speak a command...';
       voiceTooltipText.className = 'voice-tooltip-text dim';
       voiceTooltipResult.style.display = 'none';
+      voiceTooltipHint.style.display = 'none';
 
       try {
         if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -5304,6 +5333,8 @@ If uncertain, use search with the user's full utterance.`;
           voiceTooltipStatus.textContent = event.error === 'no-speech' ? 'No speech detected' : `Error: ${event.error}`;
           voiceBtn.className = 'voice-fab stopped';
           voiceMiniWave.classList.remove('active');
+          voiceTooltipHint.textContent = 'Click mic to try again';
+          voiceTooltipHint.style.display = '';
         };
 
         recognition.onend = () => {
@@ -5383,6 +5414,15 @@ If uncertain, use search with the user's full utterance.`;
             voiceTooltipStatus.textContent = 'Done';
             voiceTooltipResult.textContent = result;
             voiceTooltipResult.style.display = '';
+            voiceTooltipHint.textContent = 'Click mic to speak again';
+            voiceTooltipHint.style.display = '';
+            // Pulse the target input to show where the text went
+            const targetInput = document.getElementById('insights-input');
+            if (targetInput && action.action === 'ask_insight') {
+              targetInput.classList.remove('input-attention');
+              void targetInput.offsetWidth; // force reflow
+              targetInput.classList.add('input-attention');
+            }
             // Brief speech confirmation
             if ('speechSynthesis' in window) {
               const u = new SpeechSynthesisUtterance(result);
@@ -5391,20 +5431,26 @@ If uncertain, use search with the user's full utterance.`;
             }
           } else {
             voiceTooltipStatus.textContent = `Unknown: ${action.action}`;
+            voiceTooltipHint.textContent = 'Click mic to try again';
+            voiceTooltipHint.style.display = '';
           }
         } else {
           voiceTooltipStatus.textContent = 'Could not parse';
+          voiceTooltipHint.textContent = 'Click mic to try again';
+          voiceTooltipHint.style.display = '';
         }
       } catch (e) {
         voiceTooltipStatus.textContent = `Error`;
+        voiceTooltipHint.textContent = 'Click mic to try again';
+        voiceTooltipHint.style.display = '';
       }
 
       voiceBtn.className = 'voice-fab stopped';
 
-      // Auto-hide tooltip after 3s
+      // Auto-hide tooltip after 4s
       setTimeout(() => {
         if (!voiceState.active) voiceTooltip.classList.remove('visible');
-      }, 3000);
+      }, 4000);
     }
 
     // --- Quick action buttons ---
