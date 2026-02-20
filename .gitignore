@@ -1,3 +1,7 @@
 node_modules/
 *.js
-!public/**/*.js
+*.d.ts
+*.map
+!public/**
+.env
+.DS_Store
