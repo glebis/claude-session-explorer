@@ -7,9 +7,16 @@
  * - GET /api/sessions -- Paginated session list from session-meta
  */
 
-// Agent SDK spawns Claude Code subprocess -- these env vars conflict
+// Agent SDK spawns Claude Code subprocess -- these env vars prevent nested sessions
 delete process.env.ANTHROPIC_API_KEY;
 delete process.env.CLAUDECODE;
+delete process.env.CLAUDE_CODE_ENTRYPOINT;
+
+// Build a clean env for the agent subprocess (in case static imports capture process.env early)
+const cleanEnv: Record<string, string | undefined> = { ...process.env };
+delete cleanEnv.CLAUDECODE;
+delete cleanEnv.CLAUDE_CODE_ENTRYPOINT;
+delete cleanEnv.ANTHROPIC_API_KEY;
 
 import express from "express";
 import cors from "cors";
@@ -403,10 +410,15 @@ app.post("/api/ask", async (req, res) => {
   console.log(`[Agent] ${prompt.slice(0, 100)}...`);
 
   const abortController = new AbortController();
-  const agentTimeout = setTimeout(() => {
-    console.error("[Agent] Timeout after 30s, aborting");
-    abortController.abort();
-  }, 30000);
+  let agentTimeout: ReturnType<typeof setTimeout>;
+  const resetTimeout = () => {
+    clearTimeout(agentTimeout);
+    agentTimeout = setTimeout(() => {
+      console.error("[Agent] Timeout after 60s of inactivity, aborting");
+      abortController.abort();
+    }, 60000);
+  };
+  resetTimeout();
 
   let agentQuery: ReturnType<typeof query> | null = null;
 
@@ -427,12 +439,13 @@ app.post("/api/ask", async (req, res) => {
         model: "haiku",
         abortController,
         persistSession: false,
+        env: cleanEnv,
       },
     });
 
     for await (const message of agentQuery) {
       // Reset timeout on each message (agent is alive)
-      clearTimeout(agentTimeout);
+      resetTimeout();
 
       if (message.type === "assistant") {
         for (const block of message.message.content) {
@@ -468,8 +481,15 @@ app.post("/api/ask", async (req, res) => {
     clearTimeout(agentTimeout);
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[Agent Error] ${errorMsg}`);
+    // Provide user-friendly error messages
+    let userMsg = errorMsg;
+    if (errorMsg.includes("network error") || errorMsg.includes("ECONNREFUSED")) {
+      userMsg = "Agent unavailable — too many concurrent Claude sessions or rate limit reached. Try again in a moment.";
+    } else if (errorMsg.includes("exited with code 1")) {
+      userMsg = "Agent process failed to start. Check that Claude CLI is available and not blocked by another session.";
+    }
     if (!res.writableEnded) {
-      res.write(`data: ${JSON.stringify({ type: "error", message: errorMsg })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "error", message: userMsg })}\n\n`);
     }
     // Force-close the query if still running
     try { agentQuery?.close(); } catch {}

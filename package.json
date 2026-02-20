@@ -7,7 +7,7 @@
     "embed": "tsx embedder.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.42",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.49",
     "cors": "^2.8.5",
     "express": "^5.0.1",
     "pg": "^8.13.1",

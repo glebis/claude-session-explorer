@@ -4782,6 +4782,16 @@ Keep it concise but thorough. Use markdown tables and headers for structure.`
     loadReportsFromStorage();
 
     async function loadInsightsReport() {
+      // If a "Latest Insights Report" card already exists, just expand & scroll to it
+      const existing = [...document.querySelectorAll('.report-card')].find(
+        c => c.dataset.title === 'Latest Insights Report'
+      );
+      if (existing) {
+        existing.classList.add('expanded');
+        existing.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
       const loading = document.getElementById('insights-loading');
       loading.classList.add('visible');
 
